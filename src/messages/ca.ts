@@ -20,8 +20,8 @@ export const ca = {
     sections: {
       pizza: { title: "Pizzes", intro: "Fetes i envasades al buit. Només cal acabar-les al forn." },
       base: {
-        title: "Fes-la a casa",
-        intro: "La nostra massa ja estirada i envasada al buit, sola o amb tomàquet.",
+        title: "La nostra massa",
+        intro: "Ja estirada i envasada al buit, sola o amb tomàquet.",
       },
     },
     subtitle: "Fetes al nostre obrador del Vallès Oriental. Te les portem a casa i només cal acabar-les al forn.",
