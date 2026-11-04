@@ -34,7 +34,7 @@ export default function HomePage() {
           <section key={category} aria-labelledby={`cat-${category}`} className="mb-12 scroll-mt-20">
             <SectionTitle id={`cat-${category}`}>{section.title}</SectionTitle>
             <p className="mb-5 mt-2 text-sm text-ink-soft">{section.intro}</p>
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {products.map((p, i) => (
                 <ProductCard key={p.id} product={p} index={i} priority={sectionIndex === 0 && i < 2} />
               ))}

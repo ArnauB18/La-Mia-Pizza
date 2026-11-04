@@ -38,11 +38,14 @@ html {
   color: var(--color-paper);
 }
 
-/* Anell de focus visible per a teclat, coherent amb la tinta negra */
-:focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: 3px;
-  border-radius: 0.5rem;
+/* Anell de focus visible per a teclat, coherent amb la tinta negra.
+   Dins de @layer base perquè els components el puguin substituir (p. ex. els camps de formulari). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
+  }
 }
 
 @keyframes fade-up {

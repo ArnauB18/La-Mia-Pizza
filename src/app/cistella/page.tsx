@@ -98,15 +98,16 @@ export default function CartPage() {
         </div>
       </dl>
 
-      {/* Fase 2: aquest botó portarà a /comanda (adreça, dia d'entrega i pagament). */}
-      <button
-        type="button"
-        disabled
-        className="mt-5 w-full cursor-not-allowed rounded-full bg-brand/40 px-6 py-3.5 font-semibold text-white"
+      <Link
+        href="/comanda"
+        className="group mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:-translate-y-px hover:bg-brand-dark hover:shadow-md active:scale-[0.98]"
       >
         {t.cart.checkout}
-      </button>
-      <p className="mt-2 text-center text-xs text-ink-soft">{t.cart.checkoutSoon}</p>
+        <span className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">
+          →
+        </span>
+      </Link>
+      <p className="mt-2 text-center text-xs text-ink-soft">{t.cart.checkoutHint}</p>
     </>
   );
 }

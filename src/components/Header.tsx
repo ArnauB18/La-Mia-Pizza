@@ -29,7 +29,7 @@ export function Header() {
         scrolled ? "border-line shadow-[0_6px_20px_-12px_rgba(28,26,23,0.35)]" : "border-transparent"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 lg:max-w-5xl">
         <Link href="/" className="group flex items-center gap-2" aria-label={BUSINESS.brandName}>
           <Image
             src={BUSINESS.logo.src}

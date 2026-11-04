@@ -85,13 +85,18 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 
 ## 10. Estat i estructura del codi
 
-- **Fase 1 (feta):** catàleg, fitxa de producte i cistella (localStorage). Sense base de dades.
-- **Fase 2:** zones, flux de comanda amb enviament, pagament simulat, confirmació. Neon Postgres + Drizzle.
-- **Fase 3:** estoc per dia i admin.
+- **Fase 1 (feta):** catàleg, fitxa de producte i cistella (localStorage).
+- **Fase 2 (feta):** zones per codi postal, dies i franges d'entrega (hora límit en hora de Catalunya), dades del client i adreça, pagament simulat, confirmació amb enllaç privat, pàgines legals (esborranys).
+- **Fase 3 (part feta):** admin amb contrasenya (comandes per dia/zona/estat, llista de producció, canvi d'estat, full de repartiment). Estoc per producte i dia amb capacitat per defecte i taula `daily_stock`.
+- **Pendent:** edició d'estoc, zones i productes des de l'admin; correu de confirmació; Stripe en mode test; castellà.
 
 Fitxers clau:
-- `src/data/sample-data.ts` — ⚠️ dades de mostra dels productes (únic lloc on canviar-les a la fase 1). Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
-- `src/config/business.ts` — decisions obertes (`PENDENT`): facturació, IVA, repartiment
-- `src/messages/ca.ts` — tots els textos (afegir `es.ts` per al castellà)
-- `src/lib/products.ts` — accés a productes (passarà a BD sense tocar pàgines)
-- `src/lib/cart.tsx` — cistella; només guarda id + quantitat, mai preus
+- `src/data/sample-data.ts`: ⚠️ dades de mostra dels productes. Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
+- `src/config/delivery.ts`: ⚠️ zones, codis postals, enviament, mínim, dies, hora límit, franges i estoc per defecte (tot PENDENT)
+- `src/config/business.ts`: decisions obertes (`PENDENT`): facturació, IVA, repartiment
+- `src/messages/ca.ts`: tots els textos de client (afegir `es.ts` per al castellà)
+- `src/lib/orders.ts`: lògica de comandes al servidor (validació, estoc, transacció, pagament)
+- `src/lib/dates.ts`: càlcul de dies d'entrega i hora límit (Europe/Madrid)
+- `src/db/`: esquema Drizzle, SQL de creació (`bootstrap.ts`, mantenir-lo sincronitzat) i connexió (Neon o PGlite)
+- `src/lib/cart.tsx`: cistella; només guarda id + quantitat, mai preus
+- `tests/`: proves amb Vitest (`npm test`), incloent-hi el procés de comanda contra Postgres en memòria

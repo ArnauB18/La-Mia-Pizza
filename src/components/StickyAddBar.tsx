@@ -33,7 +33,7 @@ export function StickyAddBar({ product }: { product: Product }) {
           visible ? "translate-y-0" : "pointer-events-none translate-y-full"
         }`}
       >
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 lg:max-w-5xl">
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate font-display text-2xl">{product.name}</p>
             <p className="text-sm font-bold">{formatPrice(product.priceCents)}</p>

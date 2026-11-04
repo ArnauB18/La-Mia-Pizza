@@ -13,8 +13,8 @@ import { getProductById } from "./products";
 import type { Product } from "./types";
 
 const STORAGE_KEY = "lmp-cart-v1";
-/** Límit per línia, per evitar errors de teclat. L'estoc real arriba a la fase 3. */
-export const MAX_QTY_PER_LINE = 20;
+import { MAX_QTY_PER_LINE } from "./limits";
+export { MAX_QTY_PER_LINE };
 
 type CartLines = Record<string, number>; // productId -> quantitat
 
