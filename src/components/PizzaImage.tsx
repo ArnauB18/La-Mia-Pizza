@@ -14,6 +14,7 @@ export function PizzaImage({
   showLabel = true,
   sizes = "(min-width: 768px) 600px, 100vw",
   priority = false,
+  hoverZoom = false,
 }: {
   product: Product;
   className?: string;
@@ -22,11 +23,14 @@ export function PizzaImage({
   sizes?: string;
   /** Carregar de seguida (la imatge principal d'una pàgina). */
   priority?: boolean;
+  /** Ampliar la imatge quan el ratolí passa per sobre del contenidor `group` (targetes). */
+  hoverZoom?: boolean;
 }) {
+  const zoom = hoverZoom ? "transition-transform duration-500 ease-out group-hover:scale-[1.07]" : "";
   if (product.imageUrl) {
     return (
       <div className={`relative overflow-hidden bg-crust ${className}`}>
-        <Image src={product.imageUrl} alt={product.name} fill sizes={sizes} priority={priority} className="object-cover" />
+        <Image src={product.imageUrl} alt={product.name} fill sizes={sizes} priority={priority} className={`object-cover ${zoom}`} />
       </div>
     );
   }
@@ -36,7 +40,7 @@ export function PizzaImage({
       role="img"
       aria-label={`${product.name} (imatge de mostra)`}
     >
-      <svg viewBox="0 0 100 100" className="h-3/4 w-3/4" aria-hidden="true">
+      <svg viewBox="0 0 100 100" className={`h-3/4 w-3/4 ${zoom} ${hoverZoom ? "group-hover:rotate-12" : ""}`} aria-hidden="true">
         <circle cx="50" cy="50" r="46" fill="#d9b77e" />
         {/* Sense color: massa sola (la base) */}
         <circle cx="50" cy="50" r="39" fill={product.placeholderColor ?? "#ecd3a4"} />

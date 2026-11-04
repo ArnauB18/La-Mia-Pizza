@@ -3,6 +3,7 @@ import "@fontsource/caveat-brush";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
+import { AddedToast } from "@/components/AddedToast";
 import { BUSINESS } from "@/config/business";
 import { DEFAULT_LOCALE, t } from "@/messages";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <footer className="mx-auto max-w-3xl px-4 pb-10 text-xs text-ink-soft">
             <p>{t.footer.legalPending}</p>
           </footer>
+          <AddedToast />
         </CartProvider>
       </body>
     </html>

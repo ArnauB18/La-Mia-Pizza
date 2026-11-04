@@ -35,7 +35,7 @@ export const ca = {
   product: {
     add: "Afegir",
     addToCart: "Afegir a la cistella",
-    added: "Afegida ✓",
+    added: "Afegit",
     weight: "Pes",
     shelfLife: "Vida útil",
     shelfLifeValue: (days: number) => `${days} dies des de l'envasat`,
@@ -51,7 +51,8 @@ export const ca = {
     bestBefore: "Consumir preferentment abans de",
     lotPending: "Es mostrarà el lot i la data de caducitat de cada pack.",
     sampleDataNotice: "Informació de mostra pendent de validar per l'obrador.",
-    notFound: "Aquesta pizza no existeix.",
+    notFound: "Aquest producte no existeix.",
+    related: "També et pot agradar",
   },
   cart: {
     title: "La teva cistella",
@@ -64,6 +65,9 @@ export const ca = {
     checkout: "Continuar",
     checkoutSoon: "El pas d'enviament i pagament arriba a la fase 2 del prototip.",
     units: (n: number) => (n === 1 ? "1 producte" : `${n} productes`),
+    addedToast: "Afegit a la cistella",
+    viewCart: "Veure cistella",
+    close: "Tancar",
     decrease: "Treure una unitat",
     increase: "Afegir una unitat",
   },

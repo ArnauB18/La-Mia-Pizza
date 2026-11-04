@@ -25,3 +25,76 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
 }
+
+/* ───────────── Detalls visuals i micro-interaccions ───────────── */
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Anell de focus visible per a teclat, coherent amb la tinta negra */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bump {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  70% { transform: scale(0.9); }
+}
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* La moto del logo "arriba" a la portada */
+@keyframes scooter-in {
+  0% { opacity: 0; transform: translateX(-28px) rotate(-4deg); }
+  70% { opacity: 1; transform: translateX(3px) rotate(1deg); }
+  100% { transform: none; }
+}
+/* Traç del subratllat fet a mà */
+@keyframes draw {
+  from { stroke-dashoffset: 260; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.animate-bump { animation: bump 0.45s ease-out; }
+.animate-pop { animation: pop 0.35s ease-out both; }
+.animate-toast-in { animation: toast-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.animate-scooter-in { animation: scooter-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.animate-draw { stroke-dasharray: 260; animation: draw 0.8s 0.2s ease-out both; }
+
+/* Zoom que segueix el ratolí (fitxa de producte). Només en dispositius amb ratolí. */
+@media (hover: hover) and (pointer: fine) {
+  .zoomable { cursor: zoom-in; }
+  .zoomable img { transform-origin: var(--zx, 50%) var(--zy, 50%); transition: transform 0.35s ease-out; }
+  .zoomable:hover img { transform: scale(1.8); }
+}
+
+/* Respectar qui ha demanat menys moviment al sistema */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

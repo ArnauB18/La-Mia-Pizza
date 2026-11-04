@@ -24,12 +24,21 @@ export interface CartLine {
   lineTotalCents: number;
 }
 
+/** Últim producte afegit: serveix per mostrar l'avís ("toast") i animar el comptador. */
+export interface LastAdded {
+  product: Product;
+  /** Marca de temps: canvia a cada clic, encara que sigui el mateix producte. */
+  at: number;
+}
+
 interface CartContextValue {
   /** false fins que s'ha llegit el localStorage (evita parpelleigs i errors d'hidratació). */
   ready: boolean;
   lines: CartLine[];
   totalUnits: number;
   subtotalCents: number;
+  lastAdded: LastAdded | null;
+  dismissLastAdded: () => void;
   add: (productId: string, qty?: number) => void;
   setQuantity: (productId: string, qty: number) => void;
   remove: (productId: string) => void;
@@ -60,6 +69,7 @@ function readStorage(): CartLines {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartLines>({});
   const [ready, setReady] = useState(false);
+  const [lastAdded, setLastAdded] = useState<LastAdded | null>(null);
 
   useEffect(() => {
     setItems(readStorage());
@@ -90,7 +100,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       [productId]: Math.min((prev[productId] ?? 0) + qty, MAX_QTY_PER_LINE),
     }));
+    const product = getProductById(productId);
+    if (product) setLastAdded({ product, at: Date.now() });
   }, []);
+
+  const dismissLastAdded = useCallback(() => setLastAdded(null), []);
 
   const remove = useCallback((productId: string) => setQuantity(productId, 0), [setQuantity]);
   const clear = useCallback(() => setItems({}), []);
@@ -107,12 +121,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       lines,
       totalUnits: lines.reduce((n, l) => n + l.quantity, 0),
       subtotalCents: lines.reduce((n, l) => n + l.lineTotalCents, 0),
+      lastAdded,
+      dismissLastAdded,
       add,
       setQuantity,
       remove,
       clear,
     };
-  }, [items, ready, add, setQuantity, remove, clear]);
+  }, [items, ready, lastAdded, dismissLastAdded, add, setQuantity, remove, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
