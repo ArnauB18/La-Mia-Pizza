@@ -126,9 +126,9 @@ export const SAMPLE_PRODUCTS: Product[] = [
     slug: "massa-estirada",
     name: "Massa estirada",
     category: "base",
-    shortDescription: "La nostra massa, ja estirada. Posa-hi els ingredients que vulguis.",
+    shortDescription: "La nostra massa de pizza, ja estirada i envasada al buit.",
     description:
-      "La mateixa massa que fem servir a les pizzeries, estirada i envasada al buit. Només cal afegir-hi els teus ingredients i coure-la.",
+      "La mateixa massa que fem servir a les pizzeries, estirada i envasada al buit. Es ven sola, sense cap ingredient a sobre.",
     priceCents: 350,
     weightGrams: 280,
     ingredients: "Farina de BLAT, aigua, oli d'oliva verge extra, llevat, sal.",
@@ -137,7 +137,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     shelfLifeDays: 21,
     storage: "refrigerated",
     preparation:
-      "Afegeix-hi els ingredients i cou-la al forn preescalfat a 230 °C durant 8–10 minuts, directament sobre la reixa.",
+      "Forn preescalfat a 230 °C, 8–10 minuts directament sobre la reixa.",
     placeholderToppings: false,
     active: true,
   },
@@ -146,9 +146,9 @@ export const SAMPLE_PRODUCTS: Product[] = [
     slug: "massa-amb-tomaquet",
     name: "Massa amb tomàquet",
     category: "base",
-    shortDescription: "Massa estirada amb la nostra salsa de tomàquet. Tu hi poses la resta.",
+    shortDescription: "Massa estirada amb la nostra salsa de tomàquet.",
     description:
-      "La base estirada amb la salsa de tomàquet de la casa ja posada. Afegeix-hi formatge i els ingredients que més t'agradin.",
+      "La nostra massa estirada amb la salsa de tomàquet de la casa, envasada al buit. Només porta tomàquet.",
     priceCents: 450,
     weightGrams: 340,
     ingredients: "Farina de BLAT, aigua, tomàquet, oli d'oliva verge extra, llevat, sal, orenga.",
@@ -157,7 +157,7 @@ export const SAMPLE_PRODUCTS: Product[] = [
     shelfLifeDays: 18,
     storage: "refrigerated",
     preparation:
-      "Afegeix-hi els ingredients i cou-la al forn preescalfat a 230 °C durant 8–10 minuts, directament sobre la reixa.",
+      "Forn preescalfat a 230 °C, 8–10 minuts directament sobre la reixa.",
     placeholderColor: "#c8402a",
     placeholderToppings: false,
     active: true,

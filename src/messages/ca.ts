@@ -21,13 +21,13 @@ export const ca = {
       pizza: { title: "Pizzes", intro: "Fetes i envasades al buit. Només cal acabar-les al forn." },
       base: {
         title: "Fes-la a casa",
-        intro: "La nostra massa ja estirada, sola o amb tomàquet. Tu hi poses els ingredients.",
+        intro: "La nostra massa ja estirada i envasada al buit, sola o amb tomàquet.",
       },
     },
     subtitle: "Fetes al nostre obrador del Vallès Oriental. Te les portem a casa i només cal acabar-les al forn.",
     howTitle: "Com funciona",
     howSteps: [
-      "Tria pizzes fetes o bases per fer-les a casa.",
+      "Tria les pizzes o les bases que vulguis.",
       "Digues-nos on i quin dia te les portem.",
       "Guarda-les a la nevera i fes-les al forn quan vulguis.",
     ],
