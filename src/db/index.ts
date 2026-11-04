@@ -47,6 +47,7 @@ async function connect(): Promise<{ db: Db; mode: DbMode }> {
     // Mateixa API en temps d'execució; només difereixen els tipus genèrics
     db = drizzle(client, { schema }) as unknown as Db;
     mode = onVercel ? "pglite-memory" : "pglite-file";
+    if (onVercel) console.warn("[db] Sense DATABASE_URL: base de dades EN MEMÒRIA. Les comandes es perdran. Connecta Neon.");
   }
 
   for (const statement of BOOTSTRAP_STATEMENTS) await db.execute(sql.raw(statement));

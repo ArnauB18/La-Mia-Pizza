@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getOrderForCustomer } from "@/lib/orders";
+import { getDbMode } from "@/db";
 import { formatPhone, formatPrice } from "@/lib/format";
 import { formatLongDate } from "@/lib/dates";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -23,6 +24,13 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
       <div className="animate-fade-up py-12 text-center">
         <SectionTitle as="h1">{t.confirmation.notFoundTitle}</SectionTitle>
         <p className="mt-3 text-ink-soft">{t.confirmation.notFoundText}</p>
+        {/* Diagnòstic per al prototip: sense base de dades persistent, la comanda es pot "perdre" entre servidors */}
+        {(await getDbMode()) === "pglite-memory" && (
+          <p className="mx-auto mt-6 max-w-md rounded-lg border border-dashed border-amber-400 bg-amber-50 p-3 text-left text-xs text-amber-900">
+            ⚠️ Aquest desplegament no té base de dades connectada (falta <code>DATABASE_URL</code>): les comandes només viuen a la
+            memòria de cada servidor i es poden perdre. Connecta Neon a Vercel (Storage → Neon) i torna a desplegar.
+          </p>
+        )}
         <Link href="/" className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-white">
           {t.confirmation.backHome}
         </Link>
