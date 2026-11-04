@@ -23,7 +23,7 @@ export function AddToCartButton({ productId, compact = false }: { productId: str
         setJustAdded(true);
       }}
       className={`rounded-full font-semibold text-white transition active:scale-95 ${
-        justAdded ? "bg-basil" : "bg-tomato hover:bg-tomato-dark"
+        justAdded ? "bg-basil" : "bg-brand hover:bg-brand-dark"
       } ${compact ? "px-4 py-2 text-sm" : "w-full px-6 py-3.5 text-base"}`}
       aria-live="polite"
     >

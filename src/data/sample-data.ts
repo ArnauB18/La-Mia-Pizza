@@ -13,6 +13,51 @@ import type { Product } from "@/lib/types";
 
 export const SAMPLE_PRODUCTS: Product[] = [
   {
+    // Pizza real de la carta (nom, ingredients principals i foto facilitats pel client).
+    // ⚠️ Preu, pes, llista d'ingredients completa, al·lèrgens i vida útil: DE MOSTRA.
+    // ⚠️ Pendent: com es fa l'ou en la versió envasada al buit (cru no és viable).
+    id: "p-turo",
+    slug: "turo",
+    name: "Turó",
+    shortDescription: "Base de carbonara, mozzarella, ceba caramel·litzada, bacó i ou.",
+    description:
+      "Una de les especialitats de la casa: base cremosa de carbonara, mozzarella, ceba caramel·litzada, bacó i un ou al centre.",
+    priceCents: 900,
+    weightGrams: 480,
+    ingredients:
+      "Farina de BLAT, aigua, salsa carbonara (nata de LLET, formatge (LLET), rovell d'OU), mozzarella (LLET), bacó (porc, sal, dextrosa, conservant E-250), ceba caramel·litzada (ceba, sucre, oli), OU, oli d'oliva, llevat, sal.",
+    allergens: ["gluten", "milk", "eggs"],
+    mayContain: ["soy", "mustard"],
+    shelfLifeDays: 14,
+    storage: "refrigerated",
+    preparation: "Forn preescalfat a 220 °C, 9–11 minuts directament sobre la reixa.",
+    imageUrl: "/img/pizzes/turo.webp",
+    placeholderColor: "#e8b54a",
+    active: true,
+  },
+  {
+    // Pizza real de la carta (foto facilitada pel client). Resta de dades: DE MOSTRA.
+    id: "p-pernil",
+    slug: "pernil",
+    name: "Pernil",
+    shortDescription: "Tomàquet, mozzarella i pernil cuit. La bàsica que mai falla.",
+    description:
+      "La pizza de pernil de tota la vida: base de tomàquet, mozzarella ben gratinada i pernil cuit.",
+    priceCents: 800,
+    weightGrams: 450,
+    ingredients:
+      "Farina de BLAT, aigua, tomàquet, mozzarella (LLET), pernil cuit (porc, sal, dextrosa, antioxidant E-301, conservant E-250), oli d'oliva, llevat, sal, orenga.",
+    allergens: ["gluten", "milk"],
+    mayContain: ["soy", "mustard"],
+    shelfLifeDays: 18,
+    storage: "refrigerated",
+    preparation: "Forn preescalfat a 220 °C, 8–10 minuts directament sobre la reixa.",
+    imageUrl: "/img/pizzes/pernil.webp",
+    placeholderColor: "#c86b5a",
+    active: true,
+  },
+  // ── A partir d'aquí: pizzes d'exemple INVENTADES, sense foto. Substituir per les reals. ──
+  {
     id: "p-margarita",
     slug: "margarita",
     name: "Margarita",
@@ -29,25 +74,6 @@ export const SAMPLE_PRODUCTS: Product[] = [
     storage: "refrigerated",
     preparation: "Forn preescalfat a 220 °C, 8–10 minuts directament sobre la reixa.",
     placeholderColor: "#d9412b",
-    active: true,
-  },
-  {
-    id: "p-prosciutto",
-    slug: "prosciutto",
-    name: "Prosciutto",
-    shortDescription: "Tomàquet, mozzarella i pernil cuit.",
-    description:
-      "Base de tomàquet i mozzarella amb pernil cuit de qualitat. Una aposta segura per a tota la família.",
-    priceCents: 800,
-    weightGrams: 450,
-    ingredients:
-      "Farina de BLAT, aigua, tomàquet, mozzarella (LLET), pernil cuit (porc, sal, dextrosa, antioxidant E-301, conservant E-250), oli d'oliva, llevat, sal, orenga.",
-    allergens: ["gluten", "milk"],
-    mayContain: ["soy", "mustard"],
-    shelfLifeDays: 18,
-    storage: "refrigerated",
-    preparation: "Forn preescalfat a 220 °C, 8–10 minuts directament sobre la reixa.",
-    placeholderColor: "#c86b5a",
     active: true,
   },
   {

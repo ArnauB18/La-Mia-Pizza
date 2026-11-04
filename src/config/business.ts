@@ -8,8 +8,13 @@
 export const PENDING = "PENDENT" as const;
 
 export const BUSINESS = {
-  /** Nom de treball. No fem servir logotips reals sense permís. */
   brandName: "La Mia Pizza",
+
+  /**
+   * Logo facilitat pel client (nov. 2026). Ús condicionat a l'acord amb en Lutty
+   * sobre la titularitat de la marca: si cal retirar-lo, substituir aquest fitxer.
+   */
+  logo: { src: "/img/marca/logo.png", width: 451, height: 512 },
 
   /** Qui factura la venda online (obrador, societat nova, cada pizzeria...). */
   billingEntity: PENDING,

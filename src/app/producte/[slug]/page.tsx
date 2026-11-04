@@ -31,10 +31,10 @@ export default async function ProductPage({ params }: Props) {
         ← {t.common.back}
       </Link>
 
-      <PizzaImage product={p} className="aspect-[4/3] w-full rounded-2xl" />
+      <PizzaImage product={p} className="aspect-square w-full rounded-2xl sm:aspect-[4/3]" priority />
 
       <header className="mt-5">
-        <h1 className="font-display text-3xl font-bold">{p.name}</h1>
+        <h1 className="font-display text-5xl">{p.name}</h1>
         <p className="mt-2 text-ink-soft">{p.description}</p>
         <p className="mt-4 text-2xl font-bold">
           {formatPrice(p.priceCents)}{" "}
@@ -99,7 +99,7 @@ export default async function ProductPage({ params }: Props) {
 
 function InfoBox({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
   return (
-    <div className={`rounded-xl border border-line bg-white p-3 ${wide ? "col-span-2" : ""}`}>
+    <div className={`rounded-xl border border-line bg-card p-3 ${wide ? "col-span-2" : ""}`}>
       <dt className="text-xs text-ink-soft">{label}</dt>
       <dd className="font-semibold">{value}</dd>
     </div>
@@ -109,7 +109,7 @@ function InfoBox({ label, value, wide = false }: { label: string; value: string;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="mb-2 font-display text-lg font-bold">{title}</h2>
+      <h2 className="mb-2 font-display text-2xl">{title}</h2>
       {children}
     </section>
   );

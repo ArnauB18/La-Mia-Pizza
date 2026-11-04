@@ -1,21 +1,24 @@
 @import "tailwindcss";
 
 /*
- * Paleta de treball (no és la identitat real de la marca).
- * Si en Lutty aporta colors o tipografia, només cal canviar aquests tokens.
+ * Estil de la marca, a partir de la referència que ens han passat:
+ * fons beix, tinta negra i lletra manuscrita com la del logo.
+ * Per canviar colors o tipografia, només cal tocar aquests tokens.
  */
 @theme {
-  --color-tomato: #c8341f;
-  --color-tomato-dark: #a42815;
-  --color-basil: #3f7a32;
-  --color-crust: #f6e7cc;
-  --color-paper: #fffaf2;
-  --color-ink: #2a1f1a;
-  --color-ink-soft: #6b5d55;
-  --color-line: #eadfce;
+  --color-brand: #1c1a17; /* negre tinta: botons i accents */
+  --color-brand-dark: #000000;
+  --color-basil: #3f7a32; /* confirmacions ("Afegida ✓") */
+  --color-crust: #ead3ad; /* beix fosc: fons de les imatges i caixes */
+  --color-paper: #f4e3c7; /* beix de la referència (244, 227, 199) */
+  --color-card: #fbf3e6; /* targetes, una mica més clares que el fons */
+  --color-ink: #1c1a17;
+  --color-ink-soft: #5e5345;
+  --color-line: #dcc6a2;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: Georgia, "Times New Roman", serif;
+  /* Manuscrita semblant a la del logo (autoallotjada amb @fontsource, sense dependre de Google) */
+  --font-display: "Caveat Brush", "Segoe Print", cursive;
 }
 
 body {

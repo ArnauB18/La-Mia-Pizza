@@ -15,9 +15,9 @@ export default function CartPage() {
   if (lines.length === 0) {
     return (
       <div className="py-12 text-center">
-        <h1 className="font-display text-2xl font-bold">{t.cart.title}</h1>
+        <h1 className="font-display text-4xl">{t.cart.title}</h1>
         <p className="mt-3 text-ink-soft">{t.cart.empty}</p>
-        <Link href="/" className="mt-6 inline-block rounded-full bg-tomato px-6 py-3 font-semibold text-white">
+        <Link href="/" className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-white">
           {t.cart.goToCatalog}
         </Link>
       </div>
@@ -26,13 +26,13 @@ export default function CartPage() {
 
   return (
     <>
-      <h1 className="font-display text-2xl font-bold">{t.cart.title}</h1>
+      <h1 className="font-display text-4xl">{t.cart.title}</h1>
       <p className="text-sm text-ink-soft">{t.cart.units(totalUnits)}</p>
 
-      <ul className="mt-5 divide-y divide-line rounded-2xl border border-line bg-white">
+      <ul className="mt-5 divide-y divide-line rounded-2xl border border-line bg-card">
         {lines.map(({ product, quantity, lineTotalCents }) => (
           <li key={product.id} className="flex gap-3 p-3">
-            <PizzaImage product={product} className="h-16 w-16 shrink-0 rounded-lg" showLabel={false} />
+            <PizzaImage product={product} className="h-16 w-16 shrink-0 rounded-lg" showLabel={false} sizes="64px" />
             <div className="flex flex-1 flex-col">
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/producte/${product.slug}`} className="font-semibold leading-tight">
@@ -79,7 +79,7 @@ export default function CartPage() {
       <button
         type="button"
         disabled
-        className="mt-5 w-full cursor-not-allowed rounded-full bg-tomato/50 px-6 py-3.5 font-semibold text-white"
+        className="mt-5 w-full cursor-not-allowed rounded-full bg-brand/40 px-6 py-3.5 font-semibold text-white"
       >
         {t.cart.checkout}
       </button>

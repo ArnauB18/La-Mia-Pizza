@@ -54,6 +54,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 ## 6. Dades i marca
 
 - **No facis servir logotips ni imatges reals de la marca** sense que se't donin. Usa el nom de treball "La Mia Pizza" en text i imatges de mostra o marcadors de posició
+- **Actualització (nov. 2026):** el client ha facilitat el logo (`public/img/marca/logo.png`) i fotos de la Turó i la Pernil (`public/img/pizzes/`). Estil de referència: fons beix (#f4e3c7), tinta negra, lletra manuscrita (Caveat Brush). Ús condicionat a l'acord amb en Lutty sobre la marca
 - **Preus, pesos, ingredients i vida útil són de mostra.** Marca-ho al codi (fitxer de dades clarament etiquetat). Preu de referència per a proves: ~8€ per pizza amb IVA
 - Idioma de la web: **català**, amb l'estructura preparada per afegir castellà després
 - Totes les dades visibles que s'hagin de confirmar amb en Lutty (preus, al·lèrgens, vida útil) han de poder-se canviar des d'un únic fitxer o des de l'admin
