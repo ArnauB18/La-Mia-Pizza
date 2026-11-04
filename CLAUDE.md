@@ -90,7 +90,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 - **Fase 3:** estoc per dia i admin.
 
 Fitxers clau:
-- `src/data/sample-data.ts` — ⚠️ dades de mostra dels productes (únic lloc on canviar-les a la fase 1)
+- `src/data/sample-data.ts` — ⚠️ dades de mostra dels productes (únic lloc on canviar-les a la fase 1). Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
 - `src/config/business.ts` — decisions obertes (`PENDENT`): facturació, IVA, repartiment
 - `src/messages/ca.ts` — tots els textos (afegir `es.ts` per al castellà)
 - `src/lib/products.ts` — accés a productes (passarà a BD sense tocar pàgines)

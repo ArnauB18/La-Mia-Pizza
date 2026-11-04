@@ -12,15 +12,22 @@ export const ca = {
     back: "Tornar",
   },
   nav: {
-    catalog: "Pizzes",
+    catalog: "Catàleg",
     cart: "Cistella",
   },
   home: {
     title: "Pizzes envasades al buit",
+    sections: {
+      pizza: { title: "Pizzes", intro: "Fetes i envasades al buit. Només cal acabar-les al forn." },
+      base: {
+        title: "Fes-la a casa",
+        intro: "La nostra massa ja estirada, sola o amb tomàquet. Tu hi poses els ingredients.",
+      },
+    },
     subtitle: "Fetes al nostre obrador del Vallès Oriental. Te les portem a casa i només cal acabar-les al forn.",
     howTitle: "Com funciona",
     howSteps: [
-      "Tria les pizzes que vulguis.",
+      "Tria pizzes fetes o bases per fer-les a casa.",
       "Digues-nos on i quin dia te les portem.",
       "Guarda-les a la nevera i fes-les al forn quan vulguis.",
     ],
@@ -48,15 +55,15 @@ export const ca = {
   },
   cart: {
     title: "La teva cistella",
-    empty: "Encara no hi has afegit cap pizza.",
-    goToCatalog: "Veure les pizzes",
+    empty: "Encara no hi has afegit cap producte.",
+    goToCatalog: "Veure el catàleg",
     subtotal: "Subtotal",
     shipping: "Enviament",
     shippingNext: "Es calcula al pas següent",
     remove: "Treure",
     checkout: "Continuar",
     checkoutSoon: "El pas d'enviament i pagament arriba a la fase 2 del prototip.",
-    units: (n: number) => (n === 1 ? "1 pizza" : `${n} pizzes`),
+    units: (n: number) => (n === 1 ? "1 producte" : `${n} productes`),
     decrease: "Treure una unitat",
     increase: "Afegir una unitat",
   },

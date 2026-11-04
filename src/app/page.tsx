@@ -1,11 +1,11 @@
 import Image from "next/image";
-import { getProducts } from "@/lib/products";
+import { getProductsByCategory } from "@/lib/products";
+import { CATEGORIES } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { BUSINESS } from "@/config/business";
 import { t } from "@/messages";
 
 export default function HomePage() {
-  const products = getProducts();
   return (
     <>
       {/* Capçalera a l'estil de la referència: logo + nom manuscrit sobre beix */}
@@ -24,13 +24,27 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-label={t.nav.catalog} className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-        {products.map((p, i) => (
-          <ProductCard key={p.id} product={p} priority={i < 2} />
-        ))}
-      </section>
+      {/* Una secció per categoria: pizzes fetes i bases per fer-la a casa */}
+      {CATEGORIES.map((category, sectionIndex) => {
+        const products = getProductsByCategory(category);
+        if (products.length === 0) return null;
+        const section = t.home.sections[category];
+        return (
+          <section key={category} aria-labelledby={`cat-${category}`} className="mb-10">
+            <h2 id={`cat-${category}`} className="font-display text-4xl">
+              {section.title}
+            </h2>
+            <p className="mb-4 text-sm text-ink-soft">{section.intro}</p>
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+              {products.map((p, i) => (
+                <ProductCard key={p.id} product={p} priority={sectionIndex === 0 && i < 2} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
-      <section className="mt-10 rounded-2xl border border-line bg-card p-5">
+      <section className="rounded-2xl border border-line bg-card p-5">
         <h2 className="font-display text-3xl">{t.home.howTitle}</h2>
         <ol className="mt-3 space-y-2">
           {t.home.howSteps.map((step, i) => (

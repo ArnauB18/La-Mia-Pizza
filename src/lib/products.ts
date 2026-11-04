@@ -5,10 +5,14 @@
  * Fase 2: aquestes funcions passaran a consultar Postgres i les pàgines no canviaran.
  */
 import { SAMPLE_PRODUCTS } from "@/data/sample-data";
-import type { Product } from "./types";
+import type { Category, Product } from "./types";
 
 export function getProducts(): Product[] {
   return SAMPLE_PRODUCTS.filter((p) => p.active);
+}
+
+export function getProductsByCategory(category: Category): Product[] {
+  return getProducts().filter((p) => p.category === category);
 }
 
 export function getProductBySlug(slug: string): Product | undefined {
