@@ -21,6 +21,7 @@ export default function CartPage() {
         {/* El logo (la moto) en gris suau: "encara no hi ha res per repartir" */}
         <Image
           src={BUSINESS.logo.src}
+          unoptimized
           alt=""
           width={BUSINESS.logo.width}
           height={BUSINESS.logo.height}

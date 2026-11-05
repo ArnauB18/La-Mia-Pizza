@@ -50,7 +50,11 @@ async function connect(): Promise<{ db: Db; mode: DbMode }> {
     if (onVercel) console.warn("[db] Sense DATABASE_URL: base de dades EN MEMÒRIA. Les comandes es perdran. Connecta Neon.");
   }
 
-  for (const statement of BOOTSTRAP_STATEMENTS) await db.execute(sql.raw(statement));
+  // Crear les taules només si falten: en el cas habitual és UNA consulta (no sis),
+  // cosa que importa en cada arrencada en fred d'una funció de Vercel.
+  const check = await db.execute<{ ok: boolean }>(sql`select to_regclass('public.daily_stock') is not null as ok`);
+  const rows = (Array.isArray(check) ? check : (check as unknown as { rows: { ok: boolean }[] }).rows) as { ok: boolean }[];
+  if (!rows[0]?.ok) for (const statement of BOOTSTRAP_STATEMENTS) await db.execute(sql.raw(statement));
   return { db, mode };
 }
 

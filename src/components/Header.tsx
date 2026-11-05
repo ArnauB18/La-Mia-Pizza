@@ -33,6 +33,7 @@ export function Header() {
         <Link href="/" className="group flex items-center gap-2" aria-label={BUSINESS.brandName}>
           <Image
             src={BUSINESS.logo.src}
+            unoptimized
             alt=""
             width={BUSINESS.logo.width}
             height={BUSINESS.logo.height}
@@ -57,7 +58,11 @@ export function Header() {
             strokeWidth="2"
             aria-hidden="true"
           >
-            <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
             <circle cx="10" cy="20" r="1.3" />
             <circle cx="17" cy="20" r="1.3" />
           </svg>

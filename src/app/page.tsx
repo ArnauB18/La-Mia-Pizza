@@ -13,6 +13,7 @@ export default function HomePage() {
       <section className="mb-10 flex items-center gap-4 sm:gap-6">
         <Image
           src={BUSINESS.logo.src}
+          unoptimized
           alt={BUSINESS.brandName}
           width={BUSINESS.logo.width}
           height={BUSINESS.logo.height}
@@ -36,7 +37,7 @@ export default function HomePage() {
             <p className="mb-5 mt-2 text-sm text-ink-soft">{section.intro}</p>
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {products.map((p, i) => (
-                <ProductCard key={p.id} product={p} index={i} priority={sectionIndex === 0 && i < 2} />
+                <ProductCard key={p.id} product={p} index={i} priority={sectionIndex === 0 && i === 0} />
               ))}
             </div>
           </section>
