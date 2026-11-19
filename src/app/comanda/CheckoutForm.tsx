@@ -12,7 +12,7 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { computeTotals } from "@/lib/pricing";
@@ -64,7 +64,6 @@ export function CheckoutForm() {
   const [formMessage, setFormMessage] = useState("");
   const [submitting, startSubmit] = useTransition();
   const [completed, setCompleted] = useState(false);
-  const lastZoneTown = useRef("");
 
   const items = useMemo(() => lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })), [lines]);
   const itemsKey = JSON.stringify(items);
@@ -106,11 +105,8 @@ export function CheckoutForm() {
               : (res.options.find((o) => o.available)?.date ?? ""),
           );
           setTimeSlot((current) => (res.zone.timeSlots.includes(current) ? current : res.zone.timeSlots[0]));
-          // Omplim la població si està buida o era la de la zona anterior
-          setAddress((a) => (a.town === "" || a.town === lastZoneTown.current ? { ...a, town: res.zone.town } : a));
-          lastZoneTown.current = res.zone.town;
           // Els camps que acabem d'omplir automàticament ja no tenen error
-          setErrors((e) => ({ ...e, postalCode: "", deliveryDate: "", timeSlot: "", "address.town": "" }));
+          setErrors((e) => ({ ...e, postalCode: "", deliveryDate: "", timeSlot: "" }));
         }
       })
       .catch(() => !cancelled && setFormMessage(t.checkout.genericError))

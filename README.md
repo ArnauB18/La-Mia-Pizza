@@ -58,7 +58,7 @@ reinicia el servidor (l'admin ho avisa). Sense el pas 3 l'admin queda desactivad
 | Què | Fitxer |
 |---|---|
 | Productes, preus, al·lèrgens, vida útil | `src/data/sample-data.ts` |
-| Zones, codis postals, enviament, mínim, dies, hora límit, franges, estoc per defecte | `src/config/delivery.ts` |
+| Zones (4 províncies de Catalunya), enviament, mínim, dies, hora límit, franges, estoc per defecte | `src/config/delivery.ts` |
 | Decisions obertes (facturació, IVA, repartiment) | `src/config/business.ts` |
 | Textos de la web | `src/messages/ca.ts` |
 | Textos legals (esborranys) | `src/app/legal/[slug]/page.tsx` |

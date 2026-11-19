@@ -111,9 +111,9 @@ export const ca = {
     postalCode: "Codi postal",
     postalCodePlaceholder: "08480",
     checking: "Comprovant…",
-    zoneOk: (name: string) => `Hi arribem! Repartim a ${name}.`,
-    zoneOut: "De moment no arribem a aquest codi postal.",
-    zoneOutHelp: "Repartim a Sant Feliu de Codines, Centelles, l'Ametlla del Vallès, la Garriga, Parets del Vallès, Bigues i Riells i Santa Eulàlia de Ronçana.",
+    zoneOk: (name: string) => `Hi arribem! Entreguem a domicili a tota la província de ${name}.`,
+    zoneOut: "De moment no entreguem a aquest codi postal.",
+    zoneOutHelp: "Ara mateix entreguem a domicili a tota Catalunya (codis postals que comencen per 08, 17, 25 i 43).",
     zoneInvalid: "Escriu un codi postal de 5 xifres.",
     zoneFirst: "Primer escriu el codi postal.",
     preorderInfo: (leadDays: number, time: string) =>

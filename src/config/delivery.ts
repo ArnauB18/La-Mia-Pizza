@@ -1,24 +1,21 @@
 /**
  * ⚠️  CONFIGURACIÓ D'ENTREGA: VALORS DE MOSTRA, PENDENTS D'ACORDAR AMB EN LUTTY  ⚠️
  *
- * Zones, codis postals, cost d'enviament, comanda mínima, dies, hora límit i
- * franges. Tot es pot canviar des d'aquest únic fitxer (a la fase 3, des de l'admin).
+ * L'entrega és a DOMICILI, a l'adreça que posa el client (no hi ha recollida).
+ * Àmbit: tota Catalunya. Una zona per província, reconeguda pel prefix del codi
+ * postal (08 Barcelona, 17 Girona, 25 Lleida, 43 Tarragona). Cada zona pot tenir
+ * el seu cost d'enviament, mínim, dies, hora límit i franges.
  *
  * Model de pre-comanda: per rebre la comanda el dia D cal demanar-la abans de
  * `cutoffTime` del dia D − `leadDays` (hora de Catalunya).
- *
- * Proposta inicial: una zona per cada població on hi ha pizzeria.
- * Els codis postals s'han de verificar (alguns municipis en tenen més d'un).
  */
 
 export interface DeliveryZone {
   id: string;
   /** Nom que veu el client. */
   name: string;
-  /** Codis postals que cobreix la zona. */
-  postalCodes: string[];
-  /** Població per defecte en l'adreça (el client la pot canviar). */
-  town: string;
+  /** Prefixos de codi postal que cobreix la zona (p. ex. "08" = tota la província de Barcelona). */
+  postalCodePrefixes: string[];
   active: boolean;
   /** Cost d'enviament en cèntims. */
   deliveryFeeCents: number;
@@ -49,13 +46,10 @@ const DEFAULTS = {
 } satisfies Partial<DeliveryZone>;
 
 export const DELIVERY_ZONES: DeliveryZone[] = [
-  { id: "sant-feliu-de-codines", name: "Sant Feliu de Codines", town: "Sant Feliu de Codines", postalCodes: ["08182"], ...DEFAULTS },
-  { id: "centelles", name: "Centelles", town: "Centelles", postalCodes: ["08540"], ...DEFAULTS },
-  { id: "ametlla-del-valles", name: "L'Ametlla del Vallès", town: "L'Ametlla del Vallès", postalCodes: ["08480"], ...DEFAULTS },
-  { id: "la-garriga", name: "La Garriga", town: "La Garriga", postalCodes: ["08530"], ...DEFAULTS },
-  { id: "parets-del-valles", name: "Parets del Vallès", town: "Parets del Vallès", postalCodes: ["08150"], ...DEFAULTS },
-  { id: "bigues-i-riells", name: "Bigues i Riells del Fai", town: "Bigues i Riells del Fai", postalCodes: ["08415"], ...DEFAULTS },
-  { id: "santa-eulalia-de-roncana", name: "Santa Eulàlia de Ronçana", town: "Santa Eulàlia de Ronçana", postalCodes: ["08187"], ...DEFAULTS },
+  { id: "barcelona", name: "Barcelona", postalCodePrefixes: ["08"], ...DEFAULTS },
+  { id: "girona", name: "Girona", postalCodePrefixes: ["17"], ...DEFAULTS },
+  { id: "lleida", name: "Lleida", postalCodePrefixes: ["25"], ...DEFAULTS },
+  { id: "tarragona", name: "Tarragona", postalCodePrefixes: ["43"], ...DEFAULTS },
 ];
 
 /** Quants dies d'entrega com a màxim s'ofereixen al client. */
@@ -69,7 +63,8 @@ export const DEFAULT_DAILY_STOCK_PER_PRODUCT = 30;
 
 export function findZoneByPostalCode(postalCode: string): DeliveryZone | undefined {
   const pc = postalCode.trim();
-  return DELIVERY_ZONES.find((z) => z.active && z.postalCodes.includes(pc));
+  if (!/^\d{5}$/.test(pc)) return undefined;
+  return DELIVERY_ZONES.find((z) => z.active && z.postalCodePrefixes.some((prefix) => pc.startsWith(prefix)));
 }
 
 export function getZone(id: string): DeliveryZone | undefined {

@@ -65,7 +65,7 @@ export interface DeliveryOption {
 }
 
 export type DeliveryOptionsResult =
-  | { ok: true; zone: Pick<DeliveryZone, "id" | "name" | "town" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "timeSlots" | "cutoffTime" | "leadDays">; options: DeliveryOption[] }
+  | { ok: true; zone: Pick<DeliveryZone, "id" | "name" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "timeSlots" | "cutoffTime" | "leadDays">; options: DeliveryOption[] }
   | { ok: false; reason: "invalid" | "out_of_area" };
 
 export async function getDeliveryOptions(postalCode: string, items: CartItem[]): Promise<DeliveryOptionsResult> {
@@ -84,8 +84,8 @@ export async function getDeliveryOptions(postalCode: string, items: CartItem[]):
     return { date, available: soldOut.length === 0, soldOut };
   });
 
-  const { id, name, town, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays } = zone;
-  return { ok: true, zone: { id, name, town, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays }, options };
+  const { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays } = zone;
+  return { ok: true, zone: { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays }, options };
 }
 
 // ───────────────────────── Crear comanda ─────────────────────────
@@ -265,6 +265,7 @@ export async function updateOrderStatus(id: number, status: OrderStatus): Promis
   await db.update(orders).set({ status, updatedAt: new Date() }).where(eq(orders.id, id));
 }
 
+/** Nom de la zona (província). Les comandes antigues del prototip poden tenir ids de zones que ja no existeixen. */
 export function zoneName(zoneId: string): string {
   return getZone(zoneId)?.name ?? zoneId;
 }

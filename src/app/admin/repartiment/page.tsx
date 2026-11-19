@@ -18,7 +18,10 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
   const { date, zone } = await searchParams;
   if (!date || !isIsoDate(date)) redirect("/admin");
 
-  const orders = await listOrders({ date, zoneId: zone || undefined, status: "active" });
+  // Ordre de ruta: per franja i, dins de cada franja, per codi postal (pobles propers junts)
+  const orders = (await listOrders({ date, zoneId: zone || undefined, status: "active" })).sort(
+    (a, b) => a.timeSlot.localeCompare(b.timeSlot) || a.postalCode.localeCompare(b.postalCode),
+  );
   const units = orders.reduce((s, o) => s + o.items.reduce((n, i) => n + i.quantity, 0), 0);
 
   return (
@@ -43,7 +46,7 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
               <span className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-ink" aria-hidden="true" />
               <div className="flex-1">
                 <p className="font-semibold">
-                  {i + 1}. {o.timeSlot} · {zoneName(o.zoneId)} · <span className="font-mono">{o.number}</span>
+                  {i + 1}. {o.timeSlot} · {o.town} · <span className="font-mono">{o.number}</span>
                 </p>
                 <p>
                   {o.customerName} · {formatPhone(o.phone)}

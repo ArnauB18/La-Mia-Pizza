@@ -73,7 +73,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 - Cost real de la pizza envasada i capacitat de l'obrador: pendent que en Lutty ho confirmi
 - **Qui fa el repartiment** (propi des de l'obrador, repartidors de les pizzeries, transportista amb fred) i com es garanteix la cadena de fred
 - **Refrigerada o congelada**: afecta vida útil i logística
-- Zones d'entrega del pilot, cost d'enviament, comanda mínima, dies i franges d'entrega
+- **Àmbit d'entrega decidit (nov. 2026): tota Catalunya**, a domicili. Zones per província (prefix de codi postal 08/17/25/43). Pendent: cost d'enviament, comanda mínima, dies i franges per zona
 
 ## 9. Com vull treballar
 
@@ -92,7 +92,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 
 Fitxers clau:
 - `src/data/sample-data.ts`: ⚠️ dades de mostra dels productes. Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
-- `src/config/delivery.ts`: ⚠️ zones, codis postals, enviament, mínim, dies, hora límit, franges i estoc per defecte (tot PENDENT)
+- `src/config/delivery.ts`: ⚠️ zones (4 províncies de Catalunya per prefix de codi postal), enviament, mínim, dies, hora límit, franges i estoc per defecte (valors PENDENTS)
 - `src/config/business.ts`: decisions obertes (`PENDENT`): facturació, IVA, repartiment
 - `src/messages/ca.ts`: tots els textos de client (afegir `es.ts` per al castellà)
 - `src/lib/orders.ts`: lògica de comandes al servidor (validació, estoc, transacció, pagament)

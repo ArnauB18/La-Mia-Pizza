@@ -3,7 +3,7 @@ import { addDays, canOrderFor, madridNow, upcomingDeliveryDates, weekday } from 
 import type { DeliveryZone } from "@/config/delivery";
 
 const zone: DeliveryZone = {
-  id: "z", name: "Z", town: "Z", postalCodes: ["08480"], active: true,
+  id: "z", name: "Z", postalCodePrefixes: ["08"], active: true,
   deliveryFeeCents: 350, freeShippingFromCents: 3000, minOrderCents: 1500,
   deliveryWeekdays: [2, 5], cutoffTime: "20:00", leadDays: 2, timeSlots: ["17:00–19:00"],
 };
