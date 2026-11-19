@@ -23,7 +23,8 @@ export type DbMode = "postgres" | "pglite-file" | "pglite-memory";
 const globalForDb = globalThis as unknown as { __lmpDb?: Promise<{ db: Db; mode: DbMode }> };
 
 async function connect(): Promise<{ db: Db; mode: DbMode }> {
-  const url = process.env.DATABASE_URL;
+  // La integració Neon de Vercel crea DATABASE_URL; segons com es connecti, també POSTGRES_URL
+  const url = databaseUrl();
   let db: Db;
   let mode: DbMode;
 
@@ -56,6 +57,10 @@ async function connect(): Promise<{ db: Db; mode: DbMode }> {
   const rows = (Array.isArray(check) ? check : (check as unknown as { rows: { ok: boolean }[] }).rows) as { ok: boolean }[];
   if (!rows[0]?.ok) for (const statement of BOOTSTRAP_STATEMENTS) await db.execute(sql.raw(statement));
   return { db, mode };
+}
+
+export function databaseUrl(): string | undefined {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
 }
 
 export async function getDb(): Promise<Db> {

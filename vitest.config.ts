@@ -12,6 +12,6 @@ export default defineConfig({
   test: {
     environment: "node",
     // Base de dades en memòria per a les proves (mai toca ./.data)
-    env: { VERCEL: "1", DATABASE_URL: "" },
+    env: { VERCEL: "1", DATABASE_URL: "", POSTGRES_URL: "" },
   },
 });

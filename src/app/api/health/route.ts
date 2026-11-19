@@ -3,7 +3,7 @@
  * mai els seus valors. Útil per comprovar la configuració de Vercel.
  */
 import { NextResponse } from "next/server";
-import { getDbMode } from "@/db";
+import { databaseUrl, getDbMode } from "@/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ export async function GET() {
       commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
       region: process.env.VERCEL_REGION ?? null,
       adminPasswordSet: Boolean(process.env.ADMIN_PASSWORD?.trim()),
-      databaseUrlSet: Boolean(process.env.DATABASE_URL),
+      databaseUrlSet: Boolean(databaseUrl()),
       db,
     },
     { headers: { "Cache-Control": "no-store" } },
