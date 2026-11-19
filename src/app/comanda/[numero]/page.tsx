@@ -71,7 +71,6 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
       <div className="animate-fade-up mt-6 grid gap-3 sm:grid-cols-2" style={{ animationDelay: "200ms" }}>
         <InfoCard title={t.confirmation.delivery}>
           <p className="font-semibold first-letter:uppercase">{formatLongDate(order.deliveryDate)}</p>
-          <p>{order.timeSlot}</p>
         </InfoCard>
         <InfoCard title={t.confirmation.address}>
           <p>{order.addressLine}</p>

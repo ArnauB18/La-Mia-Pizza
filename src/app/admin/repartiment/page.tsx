@@ -12,15 +12,15 @@ export const metadata: Metadata = { title: "Admin · Full de repartiment", robot
 
 type Props = { searchParams: Promise<{ date?: string; zone?: string }> };
 
-/** Full imprimible per al repartidor: ordenat per zona i franja, amb casella per marcar. */
+/** Full imprimible per al repartidor: ordenat per codi postal, amb casella per marcar. */
 export default async function DeliverySheetPage({ searchParams }: Props) {
   if (!(await isAdmin())) redirect("/admin/login");
   const { date, zone } = await searchParams;
   if (!date || !isIsoDate(date)) redirect("/admin");
 
-  // Ordre de ruta: per franja i, dins de cada franja, per codi postal (pobles propers junts)
+  // Ordre de ruta: per codi postal (pobles propers queden junts)
   const orders = (await listOrders({ date, zoneId: zone || undefined, status: "active" })).sort(
-    (a, b) => a.timeSlot.localeCompare(b.timeSlot) || a.postalCode.localeCompare(b.postalCode),
+    (a, b) => a.postalCode.localeCompare(b.postalCode) || a.town.localeCompare(b.town),
   );
   const units = orders.reduce((s, o) => s + o.items.reduce((n, i) => n + i.quantity, 0), 0);
 
@@ -46,7 +46,7 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
               <span className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-ink" aria-hidden="true" />
               <div className="flex-1">
                 <p className="font-semibold">
-                  {i + 1}. {o.timeSlot} · {o.town} · <span className="font-mono">{o.number}</span>
+                  {i + 1}. {o.town} · <span className="font-mono">{o.number}</span>
                 </p>
                 <p>
                   {o.customerName} · {formatPhone(o.phone)}

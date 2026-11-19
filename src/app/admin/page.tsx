@@ -159,7 +159,7 @@ function OrderCard({ order: o }: { order: OrderWithItems }) {
       </div>
       <div className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
         <p>
-          🕒 {o.timeSlot} · {o.town}{" "}
+          📍 {o.town}{" "}
           {o.town.toLowerCase() !== zoneName(o.zoneId).toLowerCase() && (
             <span className="text-ink-soft">({zoneName(o.zoneId)})</span>
           )}

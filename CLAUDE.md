@@ -23,7 +23,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 1. El client veu el catàleg de pizzes envasades (foto, descripció, ingredients, al·lèrgens, pes, vida útil).
 2. Afegeix productes a la cistella.
 3. Introdueix el **codi postal** i es comprova si és dins d'una zona d'entrega.
-4. Posa l'adreça i **tria el dia (i franja) d'entrega** entre els disponibles per a la seva zona. És un model de **pre-comanda**: es pot demanar fins a una hora límit i s'entrega un o dos dies després.
+4. Posa l'adreça i **tria el dia d'entrega** (sense franja horària) entre els disponibles per a la seva zona. És un model de **pre-comanda**: es pot demanar fins a una hora límit i s'entrega un o dos dies després.
 5. Paga i rep una confirmació amb número de comanda.
 6. L'obrador prepara la llista de repartiment del dia i es lliuren les comandes.
 
@@ -31,9 +31,9 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 
 **Imprescindible**
 - Catàleg amb 3-4 productes d'exemple (dades de mostra, editables)
-- Cistella, comprovació de codi postal, adreça i selecció de dia/franja d'entrega
+- Cistella, comprovació de codi postal, adreça i selecció de dia d'entrega
 - **Estoc / capacitat per dia d'entrega** (tot surt de l'obrador)
-- **Zones d'entrega** configurables: codis postals, cost d'enviament, comanda mínima, dies, hora límit i franges
+- **Zones d'entrega** configurables: codis postals, cost d'enviament, comanda mínima, dies i hora límit
 - Confirmació de comanda amb número
 - Vista d'administració simple (per a en Lutty/el personal): llista de comandes per dia i zona, llista de repartiment, edició d'estoc i de zones
 - Disseny **mòbil primer**, ràpid i senzill
@@ -49,7 +49,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 - **Hosting**: Vercel (pla gratuït, domini `*.vercel.app` per a proves)
 - Preferència per un stack senzill i mantenible: **Next.js (App Router) + TypeScript**, estils amb Tailwind CSS
 - Persistència per al prototip: una base de dades gestionada i gratuïta (per exemple Neon/Vercel Postgres o Supabase) o, si cal anar ràpid, dades locals en JSON. Decideix-ho tu i explica la tria
-- Model de dades pensat per a: `Product`, `DeliveryZone`, `DailyStock` (producte × dia), `Order` (amb adreça i franja), `OrderItem`
+- Model de dades pensat per a: `Product`, `DeliveryZone`, `DailyStock` (producte × dia), `Order` (amb adreça), `OrderItem`
 
 ## 6. Dades i marca
 
@@ -73,7 +73,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 - Cost real de la pizza envasada i capacitat de l'obrador: pendent que en Lutty ho confirmi
 - **Qui fa el repartiment** (propi des de l'obrador, repartidors de les pizzeries, transportista amb fred) i com es garanteix la cadena de fred
 - **Refrigerada o congelada**: afecta vida útil i logística
-- **Àmbit d'entrega decidit (nov. 2026): tota Catalunya**, a domicili. Zones per província (prefix de codi postal 08/17/25/43). Pendent: cost d'enviament, comanda mínima, dies i franges per zona
+- **Àmbit d'entrega decidit (nov. 2026): tota Catalunya**, a domicili. Zones per província (prefix de codi postal 08/17/25/43). Sense franja horària (el client només tria el dia). Pendent: cost d'enviament, comanda mínima i dies per zona
 
 ## 9. Com vull treballar
 
@@ -86,13 +86,13 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 ## 10. Estat i estructura del codi
 
 - **Fase 1 (feta):** catàleg, fitxa de producte i cistella (localStorage).
-- **Fase 2 (feta):** zones per codi postal, dies i franges d'entrega (hora límit en hora de Catalunya), dades del client i adreça, pagament simulat, confirmació amb enllaç privat, pàgines legals (esborranys).
+- **Fase 2 (feta):** zones per codi postal, dies d'entrega sense franja horària (hora límit en hora de Catalunya), dades del client i adreça, pagament simulat, confirmació amb enllaç privat, pàgines legals (esborranys).
 - **Fase 3 (part feta):** admin amb contrasenya (comandes per dia/zona/estat, llista de producció, canvi d'estat, full de repartiment). Estoc per producte i dia amb capacitat per defecte i taula `daily_stock`.
 - **Pendent:** edició d'estoc, zones i productes des de l'admin; correu de confirmació; Stripe en mode test; castellà.
 
 Fitxers clau:
 - `src/data/sample-data.ts`: ⚠️ dades de mostra dels productes. Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
-- `src/config/delivery.ts`: ⚠️ zones (4 províncies de Catalunya per prefix de codi postal), enviament, mínim, dies, hora límit, franges i estoc per defecte (valors PENDENTS)
+- `src/config/delivery.ts`: ⚠️ zones (4 províncies de Catalunya per prefix de codi postal), enviament, mínim, dies, hora límit i estoc per defecte (valors PENDENTS)
 - `src/config/business.ts`: decisions obertes (`PENDENT`): facturació, IVA, repartiment
 - `src/messages/ca.ts`: tots els textos de client (afegir `es.ts` per al castellà)
 - `src/lib/orders.ts`: lògica de comandes al servidor (validació, estoc, transacció, pagament)

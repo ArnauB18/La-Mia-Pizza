@@ -12,7 +12,6 @@ const NOW = new Date("2026-11-05T09:00:00Z");
 const base = {
   postalCode: "08480",
   deliveryDate: "2026-11-10",
-  timeSlot: "17:00–19:00",
   customer: { name: "Maria Puig", phone: "612345678", email: "maria@example.com" },
   address: { line: "Carrer Major, 1", town: "L'Ametlla del Vallès" },
   acceptTerms: true,

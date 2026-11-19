@@ -1,7 +1,7 @@
 /**
  * Lògica de comandes (només servidor).
  *
- * Regla d'or: el servidor ho recalcula i ho valida TOT (preus, zona, dia, franja,
+ * Regla d'or: el servidor ho recalcula i ho valida TOT (preus, zona, dia,
  * estoc). Del navegador només ens creiem quins productes i quantes unitats vol.
  */
 import "server-only";
@@ -65,7 +65,7 @@ export interface DeliveryOption {
 }
 
 export type DeliveryOptionsResult =
-  | { ok: true; zone: Pick<DeliveryZone, "id" | "name" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "timeSlots" | "cutoffTime" | "leadDays">; options: DeliveryOption[] }
+  | { ok: true; zone: Pick<DeliveryZone, "id" | "name" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "cutoffTime" | "leadDays">; options: DeliveryOption[] }
   | { ok: false; reason: "invalid" | "out_of_area" };
 
 export async function getDeliveryOptions(postalCode: string, items: CartItem[]): Promise<DeliveryOptionsResult> {
@@ -84,8 +84,8 @@ export async function getDeliveryOptions(postalCode: string, items: CartItem[]):
     return { date, available: soldOut.length === 0, soldOut };
   });
 
-  const { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays } = zone;
-  return { ok: true, zone: { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, timeSlots, cutoffTime, leadDays }, options };
+  const { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays } = zone;
+  return { ok: true, zone: { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays }, options };
 }
 
 // ───────────────────────── Crear comanda ─────────────────────────
@@ -117,7 +117,6 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   if (!canOrderFor(zone, data.deliveryDate)) {
     return { ok: false, message: "Aquest dia d'entrega ja no està disponible. Tria'n un altre.", fieldErrors: { deliveryDate: "Ja no està disponible." } };
   }
-  if (!zone.timeSlots.includes(data.timeSlot)) return { ok: false, message: "Franja horària no vàlida.", fieldErrors: { timeSlot: "Tria una franja." } };
 
   // Agrupem línies repetides i preus des del catàleg (mai des del client)
   const merged = new Map<string, number>();
@@ -159,7 +158,6 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
               status: "pending",
               zoneId: zone.id,
               deliveryDate: data.deliveryDate,
-              timeSlot: data.timeSlot,
               customerName: data.customer.name,
               phone: data.customer.phone,
               email: data.customer.email,
@@ -242,7 +240,7 @@ export async function listOrders(filter: {
     .select()
     .from(orders)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(orders.deliveryDate, orders.zoneId, orders.timeSlot, desc(orders.createdAt))
+    .orderBy(orders.deliveryDate, orders.zoneId, orders.postalCode, desc(orders.createdAt))
     .limit(500);
   return withItems(rows);
 }

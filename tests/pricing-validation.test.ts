@@ -22,7 +22,6 @@ describe("validació", () => {
     items: [{ productId: "p-turo", quantity: 2 }],
     postalCode: "08480",
     deliveryDate: "2026-11-10",
-    timeSlot: "17:00–19:00",
     customer: { name: "Maria Puig", phone: "+34 612 34 56 78", email: " Maria@Example.com " },
     address: { line: "Carrer Major, 1", town: "L'Ametlla del Vallès" },
     acceptTerms: true,

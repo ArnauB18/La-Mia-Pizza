@@ -121,7 +121,7 @@ export const ca = {
     noDates: "Ara mateix no hi ha dies d'entrega disponibles.",
     soldOut: "Exhaurit",
     soldOutDetail: (names: string) => `Aquest dia no queden prou unitats de: ${names}.`,
-    slot: "Franja horària",
+    deliveryOn: "T'ho portem el",
     name: "Nom i cognoms",
     phone: "Telèfon",
     phoneHelp: "Només per si el repartidor t'ha de trucar.",

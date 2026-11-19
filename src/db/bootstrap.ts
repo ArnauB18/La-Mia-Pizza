@@ -13,7 +13,6 @@ export const BOOTSTRAP_STATEMENTS = [
     status text NOT NULL DEFAULT 'pending',
     zone_id text NOT NULL,
     delivery_date text NOT NULL,
-    time_slot text NOT NULL,
     customer_name text NOT NULL,
     phone text NOT NULL,
     email text NOT NULL,
@@ -30,6 +29,8 @@ export const BOOTSTRAP_STATEMENTS = [
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
+  // Les bases de dades creades abans de treure la franja horària encara tenen aquesta columna
+  `ALTER TABLE orders DROP COLUMN IF EXISTS time_slot`,
   `CREATE UNIQUE INDEX IF NOT EXISTS orders_number_idx ON orders (number)`,
   `CREATE INDEX IF NOT EXISTS orders_delivery_idx ON orders (delivery_date, zone_id)`,
   `CREATE TABLE IF NOT EXISTS order_items (

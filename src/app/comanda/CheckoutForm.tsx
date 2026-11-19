@@ -3,7 +3,7 @@
 /**
  * Procés de comanda en una sola pàgina, en 4 passos:
  *   1. Codi postal → comprovem si hi arribem (zona)
- *   2. Dia i franja d'entrega (segons zona i estoc)
+ *   2. Dia d'entrega (segons zona i estoc)
  *   3. Dades de contacte i adreça
  *   4. Pagament (simulat) i acceptació de condicions
  *
@@ -54,7 +54,6 @@ export function CheckoutForm() {
   const [delivery, setDelivery] = useState<DeliveryOptionsResult | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [timeSlot, setTimeSlot] = useState("");
   const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "" });
   const [address, setAddress] = useState<Address>({ line: "", extra: "", town: "", notes: "" });
   const [remember, setRemember] = useState(true);
@@ -104,9 +103,8 @@ export function CheckoutForm() {
               ? current
               : (res.options.find((o) => o.available)?.date ?? ""),
           );
-          setTimeSlot((current) => (res.zone.timeSlots.includes(current) ? current : res.zone.timeSlots[0]));
           // Els camps que acabem d'omplir automàticament ja no tenen error
-          setErrors((e) => ({ ...e, postalCode: "", deliveryDate: "", timeSlot: "" }));
+          setErrors((e) => ({ ...e, postalCode: "", deliveryDate: "" }));
         }
       })
       .catch(() => !cancelled && setFormMessage(t.checkout.genericError))
@@ -127,7 +125,6 @@ export function CheckoutForm() {
       items,
       postalCode,
       deliveryDate,
-      timeSlot,
       customer,
       address,
       acceptTerms,
@@ -191,12 +188,15 @@ export function CheckoutForm() {
   }
 
   const step1Done = Boolean(zone);
-  const step2Done = Boolean(deliveryDate && timeSlot);
+  const step2Done = Boolean(deliveryDate);
   const busy = submitting || completed;
 
   return (
     <form onSubmit={handleSubmit} noValidate className="relative">
-      <Link href="/cistella" className="group mb-4 inline-flex items-center gap-1 text-sm text-ink-soft transition hover:text-ink">
+      <Link
+        href="/cistella"
+        className="group mb-4 inline-flex items-center gap-1 text-sm text-ink-soft transition hover:text-ink"
+      >
         <span className="transition-transform duration-200 group-hover:-translate-x-1">←</span> {t.checkout.back}
       </Link>
       <SectionTitle as="h1">{t.checkout.title}</SectionTitle>
@@ -222,7 +222,9 @@ export function CheckoutForm() {
                   }}
                   className="pr-10 text-lg tracking-widest"
                 />
-                {loadingOptions && <Spinner className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />}
+                {loadingOptions && (
+                  <Spinner className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
+                )}
               </div>
             </Field>
             <div aria-live="polite" className="mt-3">
@@ -240,15 +242,27 @@ export function CheckoutForm() {
             </div>
           </section>
 
-          {/* ───── 2. Dia i franja ───── */}
-          <section aria-labelledby="step-date" id="deliveryDate-group" className={step1Done ? "" : "pointer-events-none opacity-40"}>
+          {/* ───── 2. Dia d'entrega ───── */}
+          <section
+            aria-labelledby="step-date"
+            id="deliveryDate-group"
+            className={step1Done ? "" : "pointer-events-none opacity-40"}
+          >
             <StepHeader n={2} title={t.checkout.steps.date} done={step1Done && step2Done} />
-            {zone && <p className="-mt-2 mb-4 text-sm text-ink-soft">{t.checkout.preorderInfo(zone.leadDays, zone.cutoffTime)}</p>}
+            {zone && (
+              <p className="-mt-2 mb-4 text-sm text-ink-soft">
+                {t.checkout.preorderInfo(zone.leadDays, zone.cutoffTime)}
+              </p>
+            )}
 
             {delivery?.ok && delivery.options.length === 0 && <p className="text-sm">{t.checkout.noDates}</p>}
 
             {delivery?.ok && delivery.options.length > 0 && (
-              <div role="radiogroup" aria-label={t.checkout.steps.date} className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div
+                role="radiogroup"
+                aria-label={t.checkout.steps.date}
+                className="grid grid-cols-3 gap-2 sm:grid-cols-6"
+              >
                 {delivery.options.map((o, i) => {
                   const p = formatDateParts(o.date);
                   const selected = o.date === deliveryDate;
@@ -279,36 +293,16 @@ export function CheckoutForm() {
                 })}
               </div>
             )}
-            {errors.deliveryDate && <p role="alert" className="mt-2 text-sm font-medium text-red-700">{errors.deliveryDate}</p>}
+            {errors.deliveryDate && (
+              <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+                {errors.deliveryDate}
+              </p>
+            )}
 
-            {zone && (
-              <div className="mt-5">
-                <p className="mb-2 text-sm font-semibold">{t.checkout.slot}</p>
-                <div role="radiogroup" aria-label={t.checkout.slot} className="flex flex-wrap gap-2">
-                  {zone.timeSlots.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      role="radio"
-                      aria-checked={s === timeSlot}
-                      onClick={() => {
-                        setTimeSlot(s);
-                        clearError("timeSlot");
-                      }}
-                      className={`rounded-full border-2 px-4 py-2 text-sm font-semibold tabular-nums transition ${
-                        s === timeSlot ? "border-ink bg-ink text-paper" : "border-line bg-card hover:border-ink/50"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                {deliveryDate && (
-                  <p className="animate-fade-up mt-3 text-sm text-ink-soft" key={deliveryDate + timeSlot}>
-                    📦 <span className="font-medium text-ink first-letter:uppercase">{formatLongDate(deliveryDate)}</span>, {timeSlot}
-                  </p>
-                )}
-              </div>
+            {deliveryDate && (
+              <p className="animate-fade-up mt-3 text-sm text-ink-soft" key={deliveryDate}>
+                📦 {t.checkout.deliveryOn} <span className="font-medium text-ink">{formatLongDate(deliveryDate)}</span>
+              </p>
             )}
           </section>
 
@@ -316,7 +310,12 @@ export function CheckoutForm() {
           <section aria-labelledby="step-contact">
             <StepHeader n={3} title={t.checkout.steps.contact} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={t.checkout.name} htmlFor="customer-name" error={errors["customer.name"]} className="sm:col-span-2">
+              <Field
+                label={t.checkout.name}
+                htmlFor="customer-name"
+                error={errors["customer.name"]}
+                className="sm:col-span-2"
+              >
                 <Input
                   id="customer-name"
                   autoComplete="name"
@@ -328,7 +327,12 @@ export function CheckoutForm() {
                   }}
                 />
               </Field>
-              <Field label={t.checkout.phone} htmlFor="customer-phone" error={errors["customer.phone"]} help={t.checkout.phoneHelp}>
+              <Field
+                label={t.checkout.phone}
+                htmlFor="customer-phone"
+                error={errors["customer.phone"]}
+                help={t.checkout.phoneHelp}
+              >
                 <Input
                   id="customer-phone"
                   type="tel"
@@ -342,7 +346,12 @@ export function CheckoutForm() {
                   }}
                 />
               </Field>
-              <Field label={t.checkout.email} htmlFor="customer-email" error={errors["customer.email"]} help={t.checkout.emailHelp}>
+              <Field
+                label={t.checkout.email}
+                htmlFor="customer-email"
+                error={errors["customer.email"]}
+                help={t.checkout.emailHelp}
+              >
                 <Input
                   id="customer-email"
                   type="email"
@@ -356,7 +365,12 @@ export function CheckoutForm() {
                   }}
                 />
               </Field>
-              <Field label={t.checkout.address} htmlFor="address-line" error={errors["address.line"]} className="sm:col-span-2">
+              <Field
+                label={t.checkout.address}
+                htmlFor="address-line"
+                error={errors["address.line"]}
+                className="sm:col-span-2"
+              >
                 <Input
                   id="address-line"
                   autoComplete="address-line1"
@@ -401,7 +415,12 @@ export function CheckoutForm() {
               </Field>
             </div>
             <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-sm">
-              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-ink" />
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 accent-ink"
+              />
               {t.checkout.remember}
             </label>
           </section>
@@ -414,7 +433,12 @@ export function CheckoutForm() {
                 🧪 {t.checkout.testCards}
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <Field label={t.checkout.cardNumber} htmlFor="payment-cardNumber" error={errors["payment.cardNumber"]} className="col-span-2">
+                <Field
+                  label={t.checkout.cardNumber}
+                  htmlFor="payment-cardNumber"
+                  error={errors["payment.cardNumber"]}
+                  className="col-span-2"
+                >
                   <Input
                     id="payment-cardNumber"
                     inputMode="numeric"
@@ -477,7 +501,11 @@ export function CheckoutForm() {
                   .
                 </span>
               </label>
-              {errors.acceptTerms && <p role="alert" className="mt-1.5 text-sm font-medium text-red-700">{errors.acceptTerms}</p>}
+              {errors.acceptTerms && (
+                <p role="alert" className="mt-1.5 text-sm font-medium text-red-700">
+                  {errors.acceptTerms}
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -539,7 +567,10 @@ export function CheckoutForm() {
             )}
 
             {formMessage && (
-              <p role="alert" className="animate-fade-up mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              <p
+                role="alert"
+                className="animate-fade-up mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
+              >
                 {formMessage}
               </p>
             )}
@@ -555,7 +586,14 @@ export function CheckoutForm() {
                 </>
               ) : (
                 <>
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    aria-hidden="true"
+                  >
                     <rect x="5" y="11" width="14" height="9" rx="2" />
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
                   </svg>
@@ -570,7 +608,10 @@ export function CheckoutForm() {
 
       {/* Capa mentre es processa el pagament: evita dobles clics i dona feedback clar */}
       {busy && (
-        <div className="animate-fade-up fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-paper/85 backdrop-blur-sm" role="status">
+        <div
+          className="animate-fade-up fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-paper/85 backdrop-blur-sm"
+          role="status"
+        >
           <Spinner className="h-10 w-10" />
           <p className="font-display text-3xl">{t.checkout.processing}</p>
         </div>

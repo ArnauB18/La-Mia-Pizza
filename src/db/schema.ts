@@ -24,7 +24,6 @@ export const orders = pgTable(
 
     zoneId: text("zone_id").notNull(),
     deliveryDate: text("delivery_date").notNull(), // "YYYY-MM-DD"
-    timeSlot: text("time_slot").notNull(),
 
     customerName: text("customer_name").notNull(),
     phone: text("phone").notNull(),

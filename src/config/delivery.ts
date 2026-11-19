@@ -4,7 +4,8 @@
  * L'entrega és a DOMICILI, a l'adreça que posa el client (no hi ha recollida).
  * Àmbit: tota Catalunya. Una zona per província, reconeguda pel prefix del codi
  * postal (08 Barcelona, 17 Girona, 25 Lleida, 43 Tarragona). Cada zona pot tenir
- * el seu cost d'enviament, mínim, dies, hora límit i franges.
+ * el seu cost d'enviament, mínim, dies i hora límit. No hi ha franja horària:
+ * el client només tria el dia d'entrega.
  *
  * Model de pre-comanda: per rebre la comanda el dia D cal demanar-la abans de
  * `cutoffTime` del dia D − `leadDays` (hora de Catalunya).
@@ -29,8 +30,6 @@ export interface DeliveryZone {
   cutoffTime: string;
   /** Dies d'antelació: 2 = cal demanar-ho dos dies abans de l'entrega. */
   leadDays: number;
-  /** Franges horàries d'entrega. */
-  timeSlots: string[];
 }
 
 /** Valors comuns de mostra (PENDENT). Cada zona els pot sobreescriure. */
@@ -42,7 +41,6 @@ const DEFAULTS = {
   deliveryWeekdays: [2, 5], // dimarts i divendres
   cutoffTime: "20:00",
   leadDays: 2,
-  timeSlots: ["17:00–19:00", "19:00–21:00"],
 } satisfies Partial<DeliveryZone>;
 
 export const DELIVERY_ZONES: DeliveryZone[] = [

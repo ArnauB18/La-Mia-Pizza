@@ -10,7 +10,7 @@
 | `/` | Client | Catàleg: pizzes i massa (sola o amb tomàquet) |
 | `/producte/[slug]` | Client | Fitxa: al·lèrgens, ingredients, vida útil, preparació |
 | `/cistella` | Client | Cistella (es desa al navegador) |
-| `/comanda` | Client | Codi postal → dia i franja → dades i adreça → pagament |
+| `/comanda` | Client | Codi postal → dia d'entrega → dades i adreça → pagament |
 | `/comanda/LMP-XXXXX?t=…` | Client | Confirmació (enllaç privat amb token) |
 | `/admin` | Personal | Comandes per dia, zona i estat; llista de producció; canvi d'estat |
 | `/admin/repartiment?date=…` | Personal | Full imprimible per al repartidor |
@@ -68,7 +68,7 @@ reinicia el servidor (l'admin ho avisa). Sense el pas 3 l'admin queda desactivad
 
 - **Next.js 15 (App Router) + TypeScript + Tailwind 4**. Les accions de servidor (`"use server"`) són l'única porta d'entrada.
 - **Drizzle ORM + Postgres.** Amb `DATABASE_URL` es connecta a Neon/Postgres. Sense, fa servir PGlite (Postgres en WebAssembly).
-- **El servidor ho valida tot**: preus des del catàleg, zona, dia/hora límit (en hora de Catalunya), franja,
+- **El servidor ho valida tot**: preus des del catàleg, zona, dia/hora límit (en hora de Catalunya),
   mínim de comanda i estoc. L'estoc es reserva en una transacció amb bloqueig per dia, perquè dues comandes
   alhora no puguin vendre la mateixa última unitat.
 - **Pagament** a `src/lib/payments.ts`: simulat, preparat per substituir-lo per Stripe en mode test.

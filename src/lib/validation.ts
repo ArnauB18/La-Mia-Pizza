@@ -20,7 +20,6 @@ export const checkoutSchema = z.object({
     .max(30),
   postalCode: z.string().trim().regex(/^\d{5}$/, "Codi postal de 5 xifres."),
   deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tria un dia d'entrega."),
-  timeSlot: z.string().min(1, "Tria una franja horària.").max(40),
   customer: z.object({
     name: trimmed(80).min(2, "Escriu el teu nom i cognoms."),
     phone: z
