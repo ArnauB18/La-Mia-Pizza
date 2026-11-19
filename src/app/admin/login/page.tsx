@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Accés personal" };
 export default async function LoginPage() {
   if (await isAdmin()) redirect("/admin");
   const enabled = adminPassword() !== null;
-  const usingDevDefault = !process.env.ADMIN_PASSWORD && enabled;
+  const usingDevDefault = !process.env.ADMIN_PASSWORD?.trim() && enabled;
 
   return (
     <div className="mx-auto max-w-sm py-8">

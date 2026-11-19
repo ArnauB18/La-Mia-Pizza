@@ -16,7 +16,9 @@ const COOKIE = "lmp_admin";
 const MAX_AGE = 60 * 60 * 24 * 7;
 
 export function adminPassword(): string | null {
-  if (process.env.ADMIN_PASSWORD) return process.env.ADMIN_PASSWORD;
+  // .trim(): evita problemes si en copiar-la a Vercel s'hi ha enganxat un espai o un salt de línia
+  const fromEnv = process.env.ADMIN_PASSWORD?.trim();
+  if (fromEnv) return fromEnv;
   return process.env.NODE_ENV === "production" ? null : "lamia";
 }
 
@@ -32,7 +34,7 @@ function safeEqual(a: string, b: string): boolean {
 
 export function checkPassword(candidate: string): boolean {
   const pw = adminPassword();
-  return pw !== null && safeEqual(candidate, pw);
+  return pw !== null && safeEqual(candidate.trim(), pw);
 }
 
 export async function startAdminSession(): Promise<void> {
