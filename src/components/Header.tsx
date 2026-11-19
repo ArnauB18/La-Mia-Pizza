@@ -25,7 +25,7 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-20 border-b bg-paper/90 backdrop-blur transition-shadow duration-300 ${
+      className={`sticky top-0 z-20 border-b print:hidden bg-paper/90 backdrop-blur transition-shadow duration-300 ${
         scrolled ? "border-line shadow-[0_6px_20px_-12px_rgba(28,26,23,0.35)]" : "border-transparent"
       }`}
     >

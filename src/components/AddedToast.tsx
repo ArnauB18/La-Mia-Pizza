@@ -28,7 +28,7 @@ export function AddedToast() {
     <div
       key={lastAdded.at}
       role="status"
-      className={`animate-toast-in fixed left-1/2 ${
+      className={`animate-toast-in fixed left-1/2 print:hidden ${
         // A la fitxa del mòbil hi ha la barra fixa d'afegir: l'avís es col·loca just a sobre
         pathname.startsWith("/producte") ? "bottom-24 sm:bottom-4" : "bottom-4"
       } z-40 flex w-[calc(100%-2rem)] max-w-sm items-center gap-3 rounded-2xl bg-ink p-2.5 pr-3 text-paper shadow-2xl`}

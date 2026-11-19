@@ -36,7 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </a>
           <div className="bg-ink px-4 py-1.5 text-center text-xs text-white print:hidden">{t.common.prototypeBanner}</div>
           <Header />
-          <main id="contingut" className="mx-auto max-w-3xl px-4 pb-16 pt-6 lg:max-w-5xl">
+          <main id="contingut" className="mx-auto max-w-3xl px-4 pb-16 pt-6 lg:max-w-5xl print:max-w-none print:p-0">
             {children}
           </main>
           <Footer />

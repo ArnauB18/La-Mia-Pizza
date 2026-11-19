@@ -101,3 +101,23 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/* Impressió (full de repartiment, confirmació): fons blanc, sense estalviar llegibilitat */
+@media print {
+  :root {
+    --color-paper: #ffffff;
+    --color-card: #ffffff;
+  }
+  body {
+    font-size: 12px;
+  }
+  /* Les animacions d'entrada no s'han de veure a mig fer en paper */
+  .animate-fade-up,
+  .animate-draw,
+  .animate-scooter-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}

@@ -109,7 +109,7 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
         </dl>
       </section>
 
-      <p className="mt-6 text-center text-xs text-ink-soft">{t.confirmation.keepLink}</p>
+      <p className="mt-6 text-center text-xs text-ink-soft print:hidden">{t.confirmation.keepLink}</p>
       <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row print:hidden">
         <PrintButton label={t.confirmation.print} />
         <Link

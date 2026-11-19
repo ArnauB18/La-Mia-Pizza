@@ -23,6 +23,9 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
     (a, b) => a.postalCode.localeCompare(b.postalCode) || a.town.localeCompare(b.town),
   );
   const units = orders.reduce((s, o) => s + o.items.reduce((n, i) => n + i.quantity, 0), 0);
+  // Càrrega del dia: unitats de cada producte que han de sortir de l'obrador
+  const load = new Map<string, number>();
+  for (const o of orders) for (const i of o.items) load.set(i.productName, (load.get(i.productName) ?? 0) + i.quantity);
 
   return (
     <div>
@@ -37,6 +40,20 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
         {orders.length} entregues · {units} unitats{zone ? ` · ${zoneName(zone)}` : ""}
       </p>
 
+      {load.size > 0 && (
+        <section className="mb-5 rounded-xl border-2 border-ink p-3 break-inside-avoid">
+          <h2 className="mb-1 text-xs font-bold uppercase tracking-widest">Càrrega del dia</h2>
+          <ul className="grid grid-cols-2 gap-x-6 text-sm sm:grid-cols-3">
+            {[...load].sort((x, y) => y[1] - x[1]).map(([name, n]) => (
+              <li key={name} className="flex justify-between border-b border-dotted border-ink/30 py-0.5">
+                <span>{name}</span>
+                <b className="tabular-nums">{n}</b>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {orders.length === 0 ? (
         <p className="text-ink-soft">No hi ha entregues aquest dia.</p>
       ) : (
@@ -49,7 +66,7 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
                   {i + 1}. {o.town} · <span className="font-mono">{o.number}</span>
                 </p>
                 <p>
-                  {o.customerName} · {formatPhone(o.phone)}
+                  {o.customerName} · <b>{formatPhone(o.phone)}</b>
                 </p>
                 <p>
                   {o.addressLine}
