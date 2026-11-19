@@ -21,7 +21,7 @@ const PAGES: Record<string, { title: string; sections: { h: string; p: string }[
   enviaments: {
     title: "Enviaments",
     sections: [
-      { h: "Zones", p: "Entreguem a les poblacions on hi ha pizzeria La Mia Pizza. Comprova el teu codi postal al procés de comanda." },
+      { h: "Entrega a domicili", p: "Portem la comanda a l'adreça que indiquis en fer-la. Comprova al procés de comanda si el teu codi postal és dins de la zona d'entrega." },
       { h: "Dies i franges", p: "Els dies, franges horàries, cost i mínim de comanda es mostren al procés de compra. Pendent de confirmar." },
       { h: "Cadena de fred", p: "Pendent de definir com es garanteix la temperatura durant el repartiment." },
     ],
