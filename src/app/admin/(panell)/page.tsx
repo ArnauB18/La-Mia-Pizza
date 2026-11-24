@@ -14,7 +14,7 @@ import { t } from "@/messages";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin · Comandes", robots: { index: false, follow: false } };
 
-type Props = { searchParams: Promise<{ date?: string; zone?: string; status?: string }> };
+type Props = { searchParams: Promise<{ date?: string; zone?: string; status?: string; q?: string }> };
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
   pending: "bg-stone-200 text-stone-700",
@@ -33,11 +33,13 @@ export default async function AdminPage({ searchParams }: Props) {
   const zones = await getZones();
   const names = await zoneNames();
   const zone = zones.some((z) => z.id === sp.zone) ? sp.zone! : "";
+  const search = (sp.q ?? "").trim().slice(0, 80);
   const status = sp.status === "all" ? undefined : ORDER_STATUSES.includes(sp.status as OrderStatus) ? (sp.status as OrderStatus) : "active";
   const today = madridNow().date;
 
   const [orders, dates] = await Promise.all([
-    listOrders({ date: date || undefined, fromDate: date ? undefined : today, zoneId: zone || undefined, status }),
+    // Amb cerca, es busca a tots els dies (també els passats)
+    listOrders({ date: date || undefined, fromDate: date || search ? undefined : today, zoneId: zone || undefined, status: search && !sp.status ? undefined : status, search }),
     listDeliveryDatesWithOrders(),
   ]);
 
@@ -66,6 +68,16 @@ export default async function AdminPage({ searchParams }: Props) {
 
       {/* Filtres: formulari GET, funciona sense JavaScript */}
       <form className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border border-line bg-card p-3 sm:grid-cols-4">
+        <label className="col-span-2 text-xs font-semibold sm:col-span-4">
+          Cercar comanda
+          <input
+            name="q"
+            type="search"
+            defaultValue={search}
+            placeholder="Número (LMP-…), nom, telèfon, correu o població"
+            className="mt-1 block w-full rounded-xl border border-line bg-paper px-3 py-2 text-sm font-normal"
+          />
+        </label>
         <Select name="date" label="Dia d'entrega" defaultValue={date}>
           <option value="">Propers dies</option>
           {dates.map((d) => (
@@ -115,6 +127,14 @@ export default async function AdminPage({ searchParams }: Props) {
         </div>
       </div>
 
+      {search && (
+        <p className="mt-4 text-sm">
+          {orders.length} resultat{orders.length === 1 ? "" : "s"} per «{search}» a tots els dies.{" "}
+          <Link href="/admin" className="underline underline-offset-2">
+            Treure la cerca
+          </Link>
+        </p>
+      )}
       {orders.length === 0 && <p className="mt-10 text-center text-ink-soft">No hi ha comandes amb aquests filtres.</p>}
 
       {[...byDate].map(([d, list]) => (

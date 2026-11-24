@@ -6,7 +6,7 @@
  */
 import "server-only";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "@/db";
 import type { Order, OrderItem, OrderStatus } from "@/db/schema";
 import type { DeliveryZone } from "@/config/delivery";
@@ -24,6 +24,17 @@ type CartItem = { productId: string; quantity: number };
 type Executor = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 // ───────────────────────── Estoc i disponibilitat ─────────────────────────
+
+/** Minuts que una comanda pendent de pagament reté l'estoc (després s'allibera sola). */
+export const PENDING_HOLD_MINUTES = 15;
+
+/**
+ * Comandes que ocupen estoc: totes menys les cancel·lades i les pendents de pagament
+ * velles. Si un pagament es queda a mitges (el client tanca la finestra, el servidor
+ * es reinicia...), aquelles unitats tornen a estar disponibles al cap d'uns minuts.
+ */
+const reservesStock = () =>
+  sql`(${orders.status} <> 'cancelled' and (${orders.status} <> 'pending' or ${orders.createdAt} > now() - make_interval(mins => ${PENDING_HOLD_MINUTES})))`;
 
 /** Unitats disponibles per producte i data: capacitat − venut (comandes no cancel·lades). */
 async function remainingStock(
@@ -53,7 +64,7 @@ async function remainingStock(
         and(
           inArray(orders.deliveryDate, dates),
           inArray(orderItems.productId, productIds),
-          ne(orders.status, "cancelled"),
+          reservesStock(),
         ),
       )
       .groupBy(orderItems.productId, orders.deliveryDate),
@@ -290,6 +301,8 @@ export async function listOrders(filter: {
   fromDate?: string;
   zoneId?: string;
   status?: OrderStatus | "active";
+  /** Cerca lliure: número de comanda, nom, telèfon, correu o població. */
+  search?: string;
 }): Promise<OrderWithItems[]> {
   const db = await getDb();
   const conditions = [];
@@ -298,6 +311,21 @@ export async function listOrders(filter: {
   if (filter.zoneId) conditions.push(eq(orders.zoneId, filter.zoneId));
   if (filter.status === "active") conditions.push(and(ne(orders.status, "cancelled"), ne(orders.status, "pending")));
   else if (filter.status) conditions.push(eq(orders.status, filter.status));
+  const q = filter.search?.trim();
+  if (q) {
+    // Escapem % i _ perquè es busquin com a text normal
+    const like = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+    const digits = q.replace(/\D/g, "");
+    conditions.push(
+      or(
+        ilike(orders.number, like),
+        ilike(orders.customerName, like),
+        ilike(orders.email, like),
+        ilike(orders.town, like),
+        ...(digits.length >= 3 ? [ilike(orders.phone, `%${digits}%`)] : []),
+      )!,
+    );
+  }
   const rows = await db
     .select()
     .from(orders)
@@ -360,7 +388,7 @@ export async function getStockGrid(dates: string[], productIds: string[]): Promi
       })
       .from(orderItems)
       .innerJoin(orders, eq(orders.id, orderItems.orderId))
-      .where(and(inArray(orders.deliveryDate, dates), ne(orders.status, "cancelled")))
+      .where(and(inArray(orders.deliveryDate, dates), reservesStock()))
       .groupBy(orderItems.productId, orders.deliveryDate),
   ]);
   for (const d of dates) for (const p of productIds) grid.set(`${p}|${d}`, { capacity: null, sold: 0 });

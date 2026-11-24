@@ -4,7 +4,7 @@
  * Formulari d'edició de producte. Totes les dades que es veuen a la fitxa de la
  * botiga (preu, al·lèrgens, vida útil...) es poden canviar aquí.
  */
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { saveProduct } from "@/app/admin/catalog-actions";
 import { Field, Input, Spinner, Textarea } from "@/components/ui";
 import { ALLERGENS, type Product } from "@/lib/types";
@@ -17,10 +17,13 @@ export function ProductForm({ product, defaultSortOrder }: { product?: Product; 
   const [state, action, pending] = useActionState(saveProduct, undefined);
   const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? "");
   const [allergens, setAllergens] = useState<string[]>(product?.allergens ?? []);
-  const e = state?.errors ?? {};
+  // Els errors s'amaguen en tornar a editar i reapareixen si el següent intent també falla
+  const [showErrors, setShowErrors] = useState(true);
+  useEffect(() => setShowErrors(true), [state]);
+  const e = showErrors ? (state?.errors ?? {}) : {};
 
   return (
-    <form action={action} className="mt-6 space-y-8" noValidate>
+    <form action={action} className="mt-6 space-y-8" noValidate onChange={() => setShowErrors(false)}>
       <input type="hidden" name="id" value={product?.id ?? ""} />
       <input type="hidden" name="imageUrl" value={imageUrl} />
 
@@ -142,7 +145,7 @@ export function ProductForm({ product, defaultSortOrder }: { product?: Product; 
       </Section>
 
       <div className="sticky bottom-0 -mx-4 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
-        {state?.message && (
+        {showErrors && state?.message && (
           <p role="alert" className="mb-2 text-sm font-medium text-red-700">
             {state.message}
           </p>

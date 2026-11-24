@@ -67,8 +67,47 @@ describe("comandes", () => {
     expect((await placeOrder({ ...base, items: [{ productId: "p-pernil", quantity: 1 }] })).ok).toBe(false);
   });
 
+  it("troba comandes pel número, el nom, el telèfon o el correu", async () => {
+    const [first] = await listOrders({ date: "2026-11-10", status: "active" });
+    expect((await listOrders({ search: first.number.toLowerCase() })).map((o) => o.id)).toContain(first.id);
+    expect((await listOrders({ search: "puig" })).length).toBeGreaterThan(0);
+    expect((await listOrders({ search: "612 34" })).length).toBeGreaterThan(0);
+    expect((await listOrders({ search: "maria@example" })).length).toBeGreaterThan(0);
+    expect((await listOrders({ search: "ametlla" })).length).toBeGreaterThan(0);
+    expect(await listOrders({ search: "ningú%" })).toHaveLength(0);
+  });
+
   it("llista les comandes actives del dia per a l'admin", async () => {
     const list = await listOrders({ date: "2026-11-10", status: "active" });
     expect(list).toHaveLength(2);
+  });
+});
+
+describe("comandes pendents de pagament", () => {
+  it("una comanda pendent abandonada deixa de retenir estoc al cap d'uns minuts", async () => {
+    const db = await getDb();
+    const { orders, orderItems } = await import("@/db/schema");
+    const date = "2026-11-13"; // divendres disponible des de NOW
+    await db.insert(dailyStock).values({ productId: "p-pernil", date, capacity: 2 });
+    const insertPending = async (minutesAgo: number) => {
+      const [o] = await db
+        .insert(orders)
+        .values({
+          number: `LMP-P${minutesAgo}X`, accessToken: "t", status: "pending", zoneId: "barcelona", deliveryDate: date,
+          customerName: "x", phone: "612345678", email: "x@x.cat", addressLine: "x", postalCode: "08480", town: "x",
+          subtotalCents: 1600, deliveryFeeCents: 0, totalCents: 1600, paymentProvider: "simulated",
+          createdAt: new Date(Date.now() - minutesAgo * 60_000),
+        })
+        .returning({ id: orders.id });
+      await db.insert(orderItems).values({ orderId: o.id, productId: "p-pernil", productName: "Pernil", unitPriceCents: 800, quantity: 2 });
+    };
+    const available = async () => {
+      const r = await getDeliveryOptions("08480", [{ productId: "p-pernil", quantity: 1 }]);
+      return r.ok ? r.options.find((o) => o.date === date)?.available : undefined;
+    };
+    await insertPending(60); // abandonada fa una hora: no compta
+    expect(await available()).toBe(true);
+    await insertPending(2); // en curs: sí que reté les 2 unitats
+    expect(await available()).toBe(false);
   });
 });
