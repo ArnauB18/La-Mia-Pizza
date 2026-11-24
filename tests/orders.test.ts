@@ -3,8 +3,6 @@
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { getDeliveryOptions, getOrderForCustomer, listOrders, placeOrder } from "@/lib/orders";
-import { getDb } from "@/db";
-import { dailyStock } from "@/db/schema";
 
 // Dijous 5/11/2026 al matí: el primer dia possible és dimarts 10/11
 const NOW = new Date("2026-11-05T09:00:00Z");
@@ -18,19 +16,16 @@ const base = {
   payment: { cardNumber: "4242424242424242" },
 };
 
-beforeAll(async () => {
+beforeAll(() => {
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
-  const db = await getDb();
-  // Només 3 Turó aquell dia, per provar l'esgotament d'estoc
-  await db.insert(dailyStock).values({ productId: "p-turo", date: "2026-11-10", capacity: 3 });
 });
 
 describe("comandes", () => {
   it("ofereix dies d'entrega per a un codi postal de la zona", async () => {
-    const res = await getDeliveryOptions("08480", [{ productId: "p-turo", quantity: 1 }]);
+    const res = await getDeliveryOptions("08480");
     expect(res.ok).toBe(true);
-    if (res.ok) expect(res.options[0]).toMatchObject({ date: "2026-11-10", available: true });
-    expect((await getDeliveryOptions("28001", [])).ok).toBe(false);
+    if (res.ok) expect(res.options[0]).toEqual({ date: "2026-11-10" });
+    expect((await getDeliveryOptions("28001")).ok).toBe(false);
   });
 
   it("crea la comanda amb preus del servidor i la recupera amb el token", async () => {
@@ -44,19 +39,17 @@ describe("comandes", () => {
     expect(await getOrderForCustomer(res.number, "token-incorrecte")).toBeNull();
   });
 
-  it("no ven més unitats de les que hi ha", async () => {
-    const res = await placeOrder({ ...base, items: [{ productId: "p-turo", quantity: 2 }] });
-    expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.message).toMatch(/No queden prou unitats/);
-    const opts = await getDeliveryOptions("08480", [{ productId: "p-turo", quantity: 2 }]);
-    if (opts.ok) expect(opts.options[0].available).toBe(false);
+  it("producció a demanda: no hi ha límit d'unitats per dia", async () => {
+    const res = await placeOrder({ ...base, items: [{ productId: "p-turo", quantity: 20 }] });
+    expect(res.ok).toBe(true);
   });
 
-  it("si el pagament falla, cancel·la la comanda i allibera l'estoc", async () => {
-    // Queda 1 Turó: si el pagament denegat no l'alliberés, la segona comanda fallaria
+  it("si el pagament falla, la comanda queda cancel·lada", async () => {
     const items = [{ productId: "p-turo", quantity: 1 }, { productId: "p-pernil", quantity: 1 }];
     const declined = await placeOrder({ ...base, items, payment: { cardNumber: "4000000000000002" } });
     expect(declined.ok).toBe(false);
+    const cancelled = await listOrders({ date: "2026-11-10", status: "cancelled" });
+    expect(cancelled).toHaveLength(1);
     const ok = await placeOrder({ ...base, items });
     expect(ok.ok).toBe(true);
   });
@@ -79,35 +72,6 @@ describe("comandes", () => {
 
   it("llista les comandes actives del dia per a l'admin", async () => {
     const list = await listOrders({ date: "2026-11-10", status: "active" });
-    expect(list).toHaveLength(2);
-  });
-});
-
-describe("comandes pendents de pagament", () => {
-  it("una comanda pendent abandonada deixa de retenir estoc al cap d'uns minuts", async () => {
-    const db = await getDb();
-    const { orders, orderItems } = await import("@/db/schema");
-    const date = "2026-11-13"; // divendres disponible des de NOW
-    await db.insert(dailyStock).values({ productId: "p-pernil", date, capacity: 2 });
-    const insertPending = async (minutesAgo: number) => {
-      const [o] = await db
-        .insert(orders)
-        .values({
-          number: `LMP-P${minutesAgo}X`, accessToken: "t", status: "pending", zoneId: "barcelona", deliveryDate: date,
-          customerName: "x", phone: "612345678", email: "x@x.cat", addressLine: "x", postalCode: "08480", town: "x",
-          subtotalCents: 1600, deliveryFeeCents: 0, totalCents: 1600, paymentProvider: "simulated",
-          createdAt: new Date(Date.now() - minutesAgo * 60_000),
-        })
-        .returning({ id: orders.id });
-      await db.insert(orderItems).values({ orderId: o.id, productId: "p-pernil", productName: "Pernil", unitPriceCents: 800, quantity: 2 });
-    };
-    const available = async () => {
-      const r = await getDeliveryOptions("08480", [{ productId: "p-pernil", quantity: 1 }]);
-      return r.ok ? r.options.find((o) => o.date === date)?.available : undefined;
-    };
-    await insertPending(60); // abandonada fa una hora: no compta
-    expect(await available()).toBe(true);
-    await insertPending(2); // en curs: sí que reté les 2 unitats
-    expect(await available()).toBe(false);
+    expect(list).toHaveLength(3); // la cancel·lada no hi surt
   });
 });

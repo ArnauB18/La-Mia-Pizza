@@ -3,7 +3,7 @@
 /**
  * Procés de comanda en una sola pàgina, en 4 passos:
  *   1. Codi postal → comprovem si hi arribem (zona)
- *   2. Dia d'entrega (segons zona i estoc)
+ *   2. Dia d'entrega (segons la zona)
  *   3. Dades de contacte i adreça
  *   4. Pagament (simulat) i acceptació de condicions
  *
@@ -85,7 +85,7 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
 
   const [postalCode, setPostalCode] = useState(typeof saved.postalCode === "string" ? saved.postalCode : "");
   // Última resposta del servidor, amb la clau (codi postal + cistella) per a la qual es va demanar
-  const [fetched, setFetched] = useState<{ key: string; postalCode: string; result: DeliveryOptionsResult } | null>(null);
+  const [fetched, setFetched] = useState<{ postalCode: string; result: DeliveryOptionsResult } | null>(null);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "", ...saved.customer });
   const [address, setAddress] = useState<Address>({ line: "", extra: "", town: "", notes: "", ...saved.address });
@@ -100,33 +100,28 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
   const [completed, setCompleted] = useState(false);
 
   const items = useMemo(() => lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })), [lines]);
-  const itemsKey = JSON.stringify(items);
   const validPostal = /^\d{5}$/.test(postalCode);
-  const requestKey = `${postalCode}|${itemsKey}`;
   // Es mostra la resposta del codi postal actual (encara que s'estigui refrescant per un canvi de cistella)
   const delivery = validPostal && fetched?.postalCode === postalCode ? fetched.result : null;
-  const loadingOptions = validPostal && items.length > 0 && fetched?.key !== requestKey;
+  const loadingOptions = validPostal && fetched?.postalCode !== postalCode;
   const zone = delivery?.ok ? delivery.zone : undefined;
   const totals = computeTotals(
     lines.map((l) => ({ unitPriceCents: l.product.priceCents, quantity: l.quantity })),
     zone,
   );
 
-  // Cada cop que canvia el codi postal (5 xifres) o la cistella, demanem zona i dies
+  // Cada cop que canvia el codi postal (5 xifres), demanem la zona, els dies i la població
   useEffect(() => {
-    if (!/^\d{5}$/.test(postalCode) || items.length === 0) return;
+    if (!/^\d{5}$/.test(postalCode)) return;
     let cancelled = false;
-    const key = `${postalCode}|${itemsKey}`;
-    fetchDeliveryOptions(postalCode, items)
+    fetchDeliveryOptions(postalCode)
       .then((res) => {
         if (cancelled) return;
-        setFetched({ key, postalCode, result: res });
+        setFetched({ postalCode, result: res });
         if (res.ok) {
           // Mantenim la tria si encara és vàlida; si no, proposem el primer dia lliure
           setDeliveryDate((current) =>
-            res.options.some((o) => o.date === current && o.available)
-              ? current
-              : (res.options.find((o) => o.available)?.date ?? ""),
+            res.options.some((o) => o.date === current) ? current : (res.options[0]?.date ?? ""),
           );
           // Població a partir del codi postal: si n'hi ha una, l'omplim; si n'hi ha
           // diverses, el client tria (botons sota el camp). Mai trepitgem el que ha escrit.
@@ -148,14 +143,12 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
       .catch(() => {
         if (cancelled) return;
         setFormMessage(t.checkout.genericError);
-        setFetched({ key, postalCode, result: { ok: false, reason: "invalid" } });
+        setFetched({ postalCode, result: { ok: false, reason: "invalid" } });
       });
     return () => {
       cancelled = true;
     };
-    // itemsKey resumeix `items` (evita repetir la crida per una nova referència d'array)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postalCode, itemsKey]);
+  }, [postalCode]);
 
   const clearError = (key: string) => setErrors((e) => (e[key] ? { ...e, [key]: "" } : e));
 
@@ -189,9 +182,9 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
         setErrors(res.fieldErrors ?? {});
         setFormMessage(res.message);
         if (res.fieldErrors) focusFirstError(res.fieldErrors);
-        // L'estoc o els dies poden haver canviat: refresquem les opcions
-        if (res.fieldErrors?.deliveryDate || res.message.includes("unitats")) {
-          fetchDeliveryOptions(postalCode, items).then((r) => setFetched({ key: requestKey, postalCode, result: r }));
+        // Els dies poden haver canviat (hora límit): refresquem les opcions
+        if (res.fieldErrors?.deliveryDate) {
+          fetchDeliveryOptions(postalCode).then((r) => setFetched({ postalCode, result: r }));
         }
         return;
       }
@@ -301,8 +294,7 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
                       type="button"
                       role="radio"
                       aria-checked={selected}
-                      disabled={!o.available}
-                      title={o.available ? formatLongDate(o.date) : t.checkout.soldOutDetail(o.soldOut.join(", "))}
+                      title={formatLongDate(o.date)}
                       onClick={() => {
                         setDeliveryDate(o.date);
                         clearError("deliveryDate");
@@ -312,11 +304,11 @@ function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
                         selected
                           ? "border-ink bg-ink text-paper shadow-lg shadow-ink/20"
                           : "border-line bg-card hover:-translate-y-0.5 hover:border-ink/50"
-                      } disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0`}
+                      }`}
                     >
                       <span className="text-xs uppercase tracking-wide opacity-75">{p.weekday}</span>
                       <span className="font-display text-3xl leading-none">{p.day}</span>
-                      <span className="text-xs">{o.available ? p.month : t.checkout.soldOut}</span>
+                      <span className="text-xs">{p.month}</span>
                     </button>
                   );
                 })}

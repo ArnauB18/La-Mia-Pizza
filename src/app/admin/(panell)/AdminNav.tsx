@@ -6,20 +6,19 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/admin", label: "Comandes", icon: "📋", match: (p: string) => p === "/admin" || p.startsWith("/admin/repartiment") },
   { href: "/admin/productes", label: "Productes", icon: "🍕", match: (p: string) => p.startsWith("/admin/productes") },
-  { href: "/admin/estoc", label: "Estoc", icon: "📦", match: (p: string) => p.startsWith("/admin/estoc") },
   { href: "/admin/zones", label: "Zones", icon: "🛵", match: (p: string) => p.startsWith("/admin/zones") },
 ];
 
 /**
  * Pestanyes de l'administració.
- * Mòbil: 4 botons iguals que omplen l'amplada (icona a sobre, nom a sota), sense lliscar.
+ * Mòbil: 3 botons iguals que omplen l'amplada (icona a sobre, nom a sota), sense lliscar.
  * Ordinador: una sola fila en forma de pastilla.
  */
 export function AdminNav() {
   const pathname = usePathname();
   return (
     <nav aria-label="Administració" className="w-full sm:w-auto">
-      <ul className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-card p-1 shadow-sm sm:flex sm:gap-1.5 sm:rounded-full">
+      <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-line bg-card p-1 shadow-sm sm:flex sm:gap-1.5 sm:rounded-full">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
           return (

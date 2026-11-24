@@ -1,5 +1,5 @@
 /**
- * Catàleg: productes, zones d'entrega i configuració (només servidor).
+ * Catàleg: productes i zones d'entrega (només servidor).
  *
  * Tot es llegeix de la base de dades i s'edita des de l'admin. Les lectures
  * passen per una memòria cau de Next (`unstable_cache`) amb l'etiqueta "catalog":
@@ -7,11 +7,10 @@
  * canvi es crida `invalidateCatalog()` perquè tot es regeneri al moment.
  */
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { getDb, schema } from "@/db";
-import { SETTING_DEFAULT_STOCK } from "@/db/seed";
-import { matchZone, SEED_DEFAULT_DAILY_STOCK, type DeliveryZone } from "@/config/delivery";
+import { matchZone, type DeliveryZone } from "@/config/delivery";
 import type { Allergen, Category, Product, Storage } from "./types";
 
 const TAG = "catalog";
@@ -103,15 +102,6 @@ export async function findZoneByPostalCode(postalCode: string): Promise<Delivery
 export async function getZone(id: string): Promise<DeliveryZone | undefined> {
   return (await getZones()).find((z) => z.id === id);
 }
-
-// ───────────── Configuració ─────────────
-
-export const getDefaultDailyStock = cached(async (): Promise<number> => {
-  const db = await getDb();
-  const [row] = await db.select().from(schema.settings).where(eq(schema.settings.key, SETTING_DEFAULT_STOCK)).limit(1);
-  const n = Number(row?.value);
-  return Number.isFinite(n) && n >= 0 ? n : SEED_DEFAULT_DAILY_STOCK;
-}, "default-stock");
 
 /** Després d'un canvi a l'admin: buida la memòria cau i regenera les pàgines de la botiga. */
 export function invalidateCatalog(): void {

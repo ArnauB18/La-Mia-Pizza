@@ -32,10 +32,10 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 **Imprescindible**
 - Catàleg amb 3-4 productes d'exemple (dades de mostra, editables)
 - Cistella, comprovació de codi postal, adreça i selecció de dia d'entrega
-- **Estoc / capacitat per dia d'entrega** (tot surt de l'obrador)
+- ~~Estoc / capacitat per dia~~ **Descartat (nov. 2026): es produeix a demanda.** No hi ha límit d'unitats; l'admin mostra «A preparar» (unitats per producte) per a l'obrador
 - **Zones d'entrega** configurables: codis postals, cost d'enviament, comanda mínima, dies i hora límit
 - Confirmació de comanda amb número
-- Vista d'administració simple (per a en Lutty/el personal): llista de comandes per dia i zona, llista de repartiment, edició d'estoc i de zones
+- Vista d'administració simple (per a en Lutty/el personal): llista de comandes per dia i zona, llista de repartiment, edició de productes i de zones
 - Disseny **mòbil primer**, ràpid i senzill
 
 **Fora de l'abast del prototip**
@@ -49,7 +49,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 - **Hosting**: Vercel (pla gratuït, domini `*.vercel.app` per a proves)
 - Preferència per un stack senzill i mantenible: **Next.js (App Router) + TypeScript**, estils amb Tailwind CSS
 - Persistència per al prototip: una base de dades gestionada i gratuïta (per exemple Neon/Vercel Postgres o Supabase) o, si cal anar ràpid, dades locals en JSON. Decideix-ho tu i explica la tria
-- Model de dades pensat per a: `Product`, `DeliveryZone`, `DailyStock` (producte × dia), `Order` (amb adreça), `OrderItem`
+- Model de dades pensat per a: `Product`, `DeliveryZone`, `Order` (amb adreça), `OrderItem` (sense estoc: producció a demanda)
 
 ## 6. Dades i marca
 
@@ -70,7 +70,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 ## 8. Decisions obertes (no inventis respostes)
 
 - Percentatge o model de remuneració, i titularitat del domini, la web i les xarxes: **pendent d'acordar amb en Lutty**
-- Cost real de la pizza envasada i capacitat de l'obrador: pendent que en Lutty ho confirmi
+- Cost real de la pizza envasada: pendent que en Lutty ho confirmi (la producció és a demanda)
 - **Qui fa el repartiment** (propi des de l'obrador, repartidors de les pizzeries, transportista amb fred) i com es garanteix la cadena de fred
 - **Refrigerada o congelada**: afecta vida útil i logística
 - **Àmbit d'entrega decidit (nov. 2026): tota Catalunya**, a domicili. Zones per província (prefix de codi postal 08/17/25/43). Sense franja horària (el client només tria el dia). Pendent: cost d'enviament, comanda mínima i dies per zona
@@ -78,7 +78,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 ## 9. Com vull treballar
 
 1. Abans d'escriure codi, **proposa un pla curt** (pàgines, model de dades, passos) i espera la meva confirmació
-2. Construeix per fases petites i demostrables: primer catàleg i cistella, després zones i dies d'entrega, després estoc i admin
+2. Construeix per fases petites i demostrables: primer catàleg i cistella, després zones i dies d'entrega, després admin
 3. Mantén el codi simple i ben comentat. Explica les decisions tècniques importants en poques línies
 4. Si falta alguna dada del negoci, **pregunta-la** o usa un marcador de posició clarament etiquetat; no t'ho inventis
 5. Quan una fase estigui feta, indica com provar-la en local i com desplegar-la a Vercel
@@ -87,7 +87,7 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 
 - **Fase 1 (feta):** catàleg, fitxa de producte i cistella (localStorage).
 - **Fase 2 (feta):** zones per codi postal, dies d'entrega sense franja horària (hora límit en hora de Catalunya), dades del client i adreça, pagament simulat, confirmació amb enllaç privat, pàgines legals (esborranys).
-- **Fase 3 (feta):** admin amb contrasenya i pestanyes: Comandes (filtres, llista de producció, canvi d'estat, full de repartiment imprimible), Productes (crear/editar/desactivar, pujada de fotos), Estoc (graella producte × dia), Zones (cost, mínim, dies, hora límit).
+- **Fase 3 (feta):** admin amb contrasenya i pestanyes: Comandes (filtres, llista de producció, canvi d'estat, full de repartiment imprimible), Productes (crear/editar/desactivar, pujada de fotos), Zones (cost, mínim, dies, hora límit). Sense estoc: producció a demanda.
 - **Pendent:** correu de confirmació; Stripe en mode test; còpia de seguretat diària; castellà.
 
 **Dades:** productes, zones i configuració viuen a la base de dades (s'editen a l'admin). `src/data/sample-data.ts` i `src/config/delivery.ts` només són les dades inicials que es carreguen el primer cop. L'esquema té versió (`SCHEMA_VERSION` a `src/db/bootstrap.ts`): les bases de dades existents s'actualitzen soles en arrencar. Les fotos es guarden a la taula `images` (WebP reduït) i se serveixen a `/api/imatges/[id]`.
@@ -96,10 +96,10 @@ Fitxers clau:
 - `src/data/sample-data.ts`: ⚠️ productes inicials de mostra (només per a la primera càrrega). Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
 - `src/config/delivery.ts`: ⚠️ zones inicials (4 províncies de Catalunya per prefix de codi postal) i tipus `DeliveryZone` (valors PENDENTS; s'editen a l'admin)
 - `src/lib/catalog.ts`: lectura de productes, zones i configuració des de la BD, amb memòria cau que l'admin invalida en desar
-- `src/app/admin/catalog-actions.ts`: accions de l'admin (productes, fotos, zones, estoc) amb validació
+- `src/app/admin/catalog-actions.ts`: accions de l'admin (productes, fotos, zones) amb validació
 - `src/config/business.ts`: decisions obertes (`PENDENT`): facturació, IVA, repartiment
 - `src/messages/ca.ts`: tots els textos de client (afegir `es.ts` per al castellà)
-- `src/lib/orders.ts`: lògica de comandes al servidor (validació, estoc, transacció, pagament)
+- `src/lib/orders.ts`: lògica de comandes al servidor (validació, transacció, pagament)
 - `src/lib/dates.ts`: càlcul de dies d'entrega i hora límit (Europe/Madrid)
 - `src/db/`: esquema Drizzle, SQL de creació (`bootstrap.ts`, mantenir-lo sincronitzat) i connexió (Neon o PGlite)
 - `src/lib/cart.tsx`: cistella; només guarda id + quantitat, mai preus

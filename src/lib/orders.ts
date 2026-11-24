@@ -1,90 +1,29 @@
 /**
  * Lògica de comandes (només servidor).
  *
- * Regla d'or: el servidor ho recalcula i ho valida TOT (preus, zona, dia,
- * estoc). Del navegador només ens creiem quins productes i quantes unitats vol.
+ * Regla d'or: el servidor ho recalcula i ho valida TOT (preus, zona, dia).
+ * Del navegador només ens creiem quins productes i quantes unitats vol.
+ * No hi ha estoc: es produeix a demanda (l'admin mostra què cal preparar).
  */
 import "server-only";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gte, ilike, inArray, ne, or, sql } from "drizzle-orm";
-import { getDb, schema, type Db } from "@/db";
+import { getDb, schema } from "@/db";
 import type { Order, OrderItem, OrderStatus } from "@/db/schema";
 import type { DeliveryZone } from "@/config/delivery";
-import { findZoneByPostalCode, getDefaultDailyStock, getProductById, getProducts, getZone, getZones } from "./catalog";
+import { findZoneByPostalCode, getProductById, getZone, getZones } from "./catalog";
 import { canOrderFor, upcomingDeliveryDates } from "./dates";
 import { computeTotals } from "./pricing";
 import { POSTAL_CODE_TOWNS } from "@/data/postal-codes-cat";
 import { checkoutSchema, fieldErrors } from "./validation";
 import { chargeOrder, isValidCardNumber, PAYMENT_PROVIDER } from "./payments";
 
-const { orders, orderItems, dailyStock } = schema;
+const { orders, orderItems } = schema;
 
-type CartItem = { productId: string; quantity: number };
-/** La connexió normal o una transacció en curs (les dues tenen la mateixa API de consulta). */
-type Executor = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
-
-// ───────────────────────── Estoc i disponibilitat ─────────────────────────
-
-/** Minuts que una comanda pendent de pagament reté l'estoc (després s'allibera sola). */
-export const PENDING_HOLD_MINUTES = 15;
-
-/**
- * Comandes que ocupen estoc: totes menys les cancel·lades i les pendents de pagament
- * velles. Si un pagament es queda a mitges (el client tanca la finestra, el servidor
- * es reinicia...), aquelles unitats tornen a estar disponibles al cap d'uns minuts.
- */
-const reservesStock = () =>
-  sql`(${orders.status} <> 'cancelled' and (${orders.status} <> 'pending' or ${orders.createdAt} > now() - make_interval(mins => ${PENDING_HOLD_MINUTES})))`;
-
-/** Unitats disponibles per producte i data: capacitat − venut (comandes no cancel·lades). */
-async function remainingStock(
-  dates: string[],
-  productIds: string[],
-  opts: { executor?: Executor; defaultStock?: number } = {},
-): Promise<Map<string, number>> {
-  const remaining = new Map<string, number>();
-  if (dates.length === 0 || productIds.length === 0) return remaining;
-  // Dins d'una transacció cal fer servir la mateixa connexió (si no, es bloquejaria)
-  const db = opts.executor ?? (await getDb());
-
-  const [capacities, sold] = await Promise.all([
-    db
-      .select()
-      .from(dailyStock)
-      .where(and(inArray(dailyStock.date, dates), inArray(dailyStock.productId, productIds))),
-    db
-      .select({
-        productId: orderItems.productId,
-        date: orders.deliveryDate,
-        units: sql<number>`cast(sum(${orderItems.quantity}) as integer)`,
-      })
-      .from(orderItems)
-      .innerJoin(orders, eq(orders.id, orderItems.orderId))
-      .where(
-        and(
-          inArray(orders.deliveryDate, dates),
-          inArray(orderItems.productId, productIds),
-          reservesStock(),
-        ),
-      )
-      .groupBy(orderItems.productId, orders.deliveryDate),
-  ]);
-
-  const key = (p: string, d: string) => `${p}|${d}`;
-  // Dins d'una transacció la capacitat per defecte ha d'arribar llegida d'abans (una sola connexió)
-  const defaultStock = opts.defaultStock ?? (await getDefaultDailyStock());
-  for (const d of dates) for (const p of productIds) remaining.set(key(p, d), defaultStock);
-  for (const c of capacities) remaining.set(key(c.productId, c.date), c.capacity);
-  for (const s of sold)
-    remaining.set(key(s.productId, s.date), (remaining.get(key(s.productId, s.date)) ?? 0) - Number(s.units));
-  return remaining;
-}
+// ───────────────────────── Dies d'entrega ─────────────────────────
 
 export interface DeliveryOption {
   date: string;
-  available: boolean;
-  /** Productes de la cistella sense prou estoc aquell dia. */
-  soldOut: string[];
 }
 
 export type DeliveryOptionsResult =
@@ -100,22 +39,12 @@ export type DeliveryOptionsResult =
     }
   | { ok: false; reason: "invalid" | "out_of_area" };
 
-export async function getDeliveryOptions(postalCode: string, items: CartItem[]): Promise<DeliveryOptionsResult> {
+export async function getDeliveryOptions(postalCode: string): Promise<DeliveryOptionsResult> {
   if (!/^\d{5}$/.test(postalCode.trim())) return { ok: false, reason: "invalid" };
   const zone = await findZoneByPostalCode(postalCode);
   if (!zone) return { ok: false, reason: "out_of_area" };
 
-  const dates = upcomingDeliveryDates(zone);
-  const catalog = new Map((await getProducts()).map((p) => [p.id, p]));
-  const wanted = items.filter((i) => catalog.has(i.productId));
-  const remaining = await remainingStock(dates, [...new Set(wanted.map((i) => i.productId))]);
-
-  const options = dates.map((date) => {
-    const soldOut = wanted
-      .filter((i) => (remaining.get(`${i.productId}|${date}`) ?? 0) < i.quantity)
-      .map((i) => catalog.get(i.productId)!.name);
-    return { date, available: soldOut.length === 0, soldOut };
-  });
+  const options = upcomingDeliveryDates(zone).map((date) => ({ date }));
 
   const { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays } = zone;
   return {
@@ -138,8 +67,6 @@ function newOrderNumber(): string {
   const bytes = randomBytes(5);
   return "LMP-" + Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
-
-class CheckoutError extends Error {}
 
 export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   // 1. Validació de format
@@ -187,10 +114,8 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
     };
   }
 
-  // 3. Reserva d'estoc + creació de la comanda en una transacció.
-  //    El bloqueig per data evita que dues comandes simultànies venguin la mateixa última unitat.
+  // 3. Creació de la comanda i les seves línies en una transacció (o tot o res)
   const db = await getDb();
-  const defaultStock = await getDefaultDailyStock();
   let created: { id: number; number: string; token: string } | null = null;
   try {
     for (let attempt = 0; attempt < 3 && !created; attempt++) {
@@ -198,18 +123,6 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
       const token = randomBytes(18).toString("base64url");
       try {
         created = await db.transaction(async (tx) => {
-          await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"stock:" + data.deliveryDate}))`);
-          const remaining = await remainingStock(
-            [data.deliveryDate],
-            lines.map((l) => l.productId),
-            { executor: tx, defaultStock },
-          );
-          const short = lines.filter((l) => (remaining.get(`${l.productId}|${data.deliveryDate}`) ?? 0) < l.quantity);
-          if (short.length > 0) {
-            throw new CheckoutError(
-              `No queden prou unitats de ${short.map((s) => s.productName).join(", ")} per a aquest dia.`,
-            );
-          }
           const [order] = await tx
             .insert(orders)
             .values({
@@ -236,20 +149,18 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
           return { id: order.id, number, token };
         });
       } catch (err) {
-        if (err instanceof CheckoutError) throw err;
         // Col·lisió de número de comanda (molt improbable): ho tornem a provar
         if (String(err).includes("orders_number_idx") && attempt < 2) continue;
         throw err;
       }
     }
   } catch (err) {
-    if (err instanceof CheckoutError) return { ok: false, message: err.message };
     console.error("placeOrder", err);
     return { ok: false, message: "No hem pogut desar la comanda. Torna-ho a provar d'aquí a una estona." };
   }
   if (!created) return { ok: false, message: "No hem pogut desar la comanda." };
 
-  // 4. Cobrament (simulat). Si falla, la comanda es cancel·la i l'estoc queda lliure.
+  // 4. Cobrament (simulat). Si falla, la comanda queda cancel·lada.
   const payment = await chargeOrder({ amountCents: totals.totalCents, cardNumber: data.payment.cardNumber });
   await db
     .update(orders)
@@ -360,42 +271,4 @@ export async function zoneNames(): Promise<Record<string, string>> {
 
 export async function zoneName(zoneId: string): Promise<string> {
   return (await getZone(zoneId))?.name ?? zoneId;
-}
-
-// ───────────────────────── Estoc (admin) ─────────────────────────
-
-export interface StockCell {
-  /** Capacitat concreta per a aquell dia, o null si s'aplica la de per defecte. */
-  capacity: number | null;
-  sold: number;
-}
-
-/** Graella d'estoc per a l'admin: capacitat i unitats venudes per producte i dia. */
-export async function getStockGrid(dates: string[], productIds: string[]): Promise<Map<string, StockCell>> {
-  const grid = new Map<string, StockCell>();
-  if (dates.length === 0 || productIds.length === 0) return grid;
-  const db = await getDb();
-  const [capacities, sold] = await Promise.all([
-    db
-      .select()
-      .from(dailyStock)
-      .where(and(inArray(dailyStock.date, dates), inArray(dailyStock.productId, productIds))),
-    db
-      .select({
-        productId: orderItems.productId,
-        date: orders.deliveryDate,
-        units: sql<number>`cast(sum(${orderItems.quantity}) as integer)`,
-      })
-      .from(orderItems)
-      .innerJoin(orders, eq(orders.id, orderItems.orderId))
-      .where(and(inArray(orders.deliveryDate, dates), reservesStock()))
-      .groupBy(orderItems.productId, orders.deliveryDate),
-  ]);
-  for (const d of dates) for (const p of productIds) grid.set(`${p}|${d}`, { capacity: null, sold: 0 });
-  for (const c of capacities) grid.get(`${c.productId}|${c.date}`)!.capacity = c.capacity;
-  for (const s of sold) {
-    const cell = grid.get(`${s.productId}|${s.date}`);
-    if (cell) cell.sold = Number(s.units);
-  }
-  return grid;
 }

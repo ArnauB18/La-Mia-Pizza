@@ -119,8 +119,6 @@ export const ca = {
     preorderInfo: (leadDays: number, time: string) =>
       `Treballem per encàrrec: demana fins a les ${time} de ${leadDays === 1 ? "el dia abans" : `${leadDays} dies abans`} de l'entrega.`,
     noDates: "Ara mateix no hi ha dies d'entrega disponibles.",
-    soldOut: "Exhaurit",
-    soldOutDetail: (names: string) => `Aquest dia no queden prou unitats de: ${names}.`,
     deliveryOn: "T'ho portem el",
     name: "Nom i cognoms",
     phone: "Telèfon",

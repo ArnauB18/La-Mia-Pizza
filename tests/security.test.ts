@@ -31,8 +31,8 @@ describe("injecció SQL", () => {
     const res = await placeOrder({
       items: [{ productId: "p-turo", quantity: 2 }],
       postalCode: "08480",
-      deliveryDate: (await getDeliveryOptions("08480", [])).ok
-        ? ((await getDeliveryOptions("08480", [])) as { options: { date: string }[] }).options[0].date
+      deliveryDate: (await getDeliveryOptions("08480")).ok
+        ? ((await getDeliveryOptions("08480")) as { options: { date: string }[] }).options[0].date
         : "",
       // Les dades malicioses s'han de desar com a text normal
       customer: { name: "Robert'); DROP TABLE orders;--", phone: "612345678", email: "x@example.com" },
@@ -66,7 +66,7 @@ describe("injecció SQL", () => {
 
   it("el codi postal i les imatges rebutgen entrades estranyes", async () => {
     for (const p of PAYLOADS) {
-      expect((await getDeliveryOptions(p, [])).ok).toBe(false);
+      expect((await getDeliveryOptions(p)).ok).toBe(false);
       expect(await readImage(p)).toBeNull();
     }
   });

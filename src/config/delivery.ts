@@ -55,9 +55,6 @@ export const SEED_ZONES: DeliveryZone[] = [
   { id: "tarragona", name: "Tarragona", postalCodePrefixes: ["43"], ...DEFAULTS },
 ];
 
-/** Capacitat inicial de l'obrador: unitats de cada producte per dia (PENDENT; editable a l'admin). */
-export const SEED_DEFAULT_DAILY_STOCK = 30;
-
 /** Quants dies d'entrega com a màxim s'ofereixen al client. */
 export const MAX_DELIVERY_OPTIONS = 6;
 

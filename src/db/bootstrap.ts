@@ -42,12 +42,6 @@ export const BOOTSTRAP_STATEMENTS = [
     quantity integer NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS order_items_order_idx ON order_items (order_id)`,
-  `CREATE TABLE IF NOT EXISTS daily_stock (
-    product_id text NOT NULL,
-    date text NOT NULL,
-    capacity integer NOT NULL,
-    PRIMARY KEY (product_id, date)
-  )`,
   `CREATE TABLE IF NOT EXISTS products (
     id text PRIMARY KEY,
     slug text NOT NULL UNIQUE,
@@ -105,13 +99,18 @@ export const BOOTSTRAP_STATEMENTS = [
     id integer PRIMARY KEY,
     schema_version integer NOT NULL
   )`,
+  // Neteja de coses que ja no es fan servir (bases de dades de versions anteriors).
+  // Va al final: les taules a què fa referència ja existeixen segur.
+  `DROP TABLE IF EXISTS daily_stock`,
+  `DELETE FROM settings WHERE key = 'default_daily_stock'`,
 ];
 
 /**
  * Versió actual de l'esquema. Puja-la quan afegeixis taules o columnes: les bases
  * de dades existents (Neon, local) s'actualitzaran soles en la següent arrencada.
- *   1: comandes, línies i estoc
+ *   1: comandes i línies (i estoc, ja eliminat)
  *   2: productes, zones, configuració i imatges editables des de l'admin
  *   3: intents d'entrada a l'admin (protecció contra força bruta)
+ *   4: sense estoc (producció a demanda): s'esborra daily_stock
  */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;

@@ -14,7 +14,6 @@ import {
   index,
   integer,
   pgTable,
-  primaryKey,
   serial,
   text,
   timestamp,
@@ -75,21 +74,6 @@ export const orderItems = pgTable(
   (t) => [index("order_items_order_idx").on(t.orderId)],
 );
 
-/**
- * Capacitat de l'obrador per producte i dia d'entrega.
- * Si no hi ha fila, s'aplica la capacitat per defecte (taula `settings`, editable a l'admin).
- * Disponible = capacitat − unitats ja venudes (comandes no cancel·lades).
- */
-export const dailyStock = pgTable(
-  "daily_stock",
-  {
-    productId: text("product_id").notNull(),
-    date: text("date").notNull(),
-    capacity: integer("capacity").notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.productId, t.date] })],
-);
-
 /** Catàleg de productes (editable des de l'admin). Mai s'esborren: es desactiven. */
 export const products = pgTable("products", {
   id: text("id").primaryKey(),
@@ -131,7 +115,7 @@ export const deliveryZones = pgTable("delivery_zones", {
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
-/** Configuració clau → valor (p. ex. capacitat per defecte de l'obrador). */
+/** Configuració clau → valor (reservada per a opcions futures de l'admin). */
 export const settings = pgTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

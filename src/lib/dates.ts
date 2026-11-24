@@ -63,7 +63,7 @@ export function canOrderFor(zone: DeliveryZone, deliveryDate: string, now: Date 
   return minutes < timeToMinutes(zone.cutoffTime);
 }
 
-/** Properes dates d'entrega possibles per a una zona (sense mirar l'estoc). */
+/** Properes dates d'entrega possibles per a una zona. */
 export function upcomingDeliveryDates(zone: DeliveryZone, now: Date = new Date(), max = MAX_DELIVERY_OPTIONS): string[] {
   const { date: today } = madridNow(now);
   const result: string[] = [];

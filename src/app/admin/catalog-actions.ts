@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Accions de l'admin per editar el catàleg: productes, fotos, zones i estoc.
+ * Accions de l'admin per editar el catàleg: productes, fotos i zones.
  * Totes comproven la sessió i validen les dades al servidor. Després de desar,
  * `invalidateCatalog()` fa que la botiga mostri els canvis al moment.
  */
@@ -11,7 +11,6 @@ import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin-auth";
 import { getDb, schema } from "@/db";
-import { SETTING_DEFAULT_STOCK } from "@/db/seed";
 import { invalidateCatalog } from "@/lib/catalog";
 import { storeProductImage, type UploadResult } from "@/lib/images";
 import { ALLERGENS, CATEGORIES } from "@/lib/types";
@@ -224,49 +223,4 @@ export async function saveZone(_prev: FormState, formData: FormData): Promise<Fo
   invalidateCatalog();
   revalidatePath("/admin/zones");
   return { ok: true, message: "Desat." };
-}
-
-// ───────────── Estoc ─────────────
-
-/**
- * Desa la graella d'estoc. Cada casella arriba com a "cap|<producte>|<data>":
- *   - buida → s'esborra la fila i s'aplica la capacitat per defecte
- *   - número → capacitat concreta per a aquell producte i dia
- */
-export async function saveStock(_prev: FormState, formData: FormData): Promise<FormState> {
-  await requireAdmin();
-  const def = Number(String(formData.get("defaultStock") ?? "").trim());
-  if (!Number.isInteger(def) || def < 0 || def > 100000) {
-    return { message: "La capacitat per defecte ha de ser un número enter (0 o més).", errors: { defaultStock: "Número no vàlid." } };
-  }
-
-  const cells: { productId: string; date: string; value: string }[] = [];
-  for (const [key, raw] of formData.entries()) {
-    if (!key.startsWith("cap|")) continue;
-    const [, productId, date] = key.split("|");
-    if (!productId || !isIsoDate(date ?? "")) continue;
-    cells.push({ productId, date, value: String(raw).trim() });
-  }
-  const bad = cells.find((c) => c.value !== "" && (!/^\d+$/.test(c.value) || Number(c.value) > 100000));
-  if (bad) return { message: "Les capacitats han de ser números enters (0 o més), o buides per fer servir la de per defecte." };
-
-  const db = await getDb();
-  await db.transaction(async (tx) => {
-    await tx
-      .insert(schema.settings)
-      .values({ key: SETTING_DEFAULT_STOCK, value: String(def) })
-      .onConflictDoUpdate({ target: schema.settings.key, set: { value: String(def) } });
-    for (const c of cells) {
-      const where = and(eq(schema.dailyStock.productId, c.productId), eq(schema.dailyStock.date, c.date));
-      if (c.value === "") await tx.delete(schema.dailyStock).where(where);
-      else
-        await tx
-          .insert(schema.dailyStock)
-          .values({ productId: c.productId, date: c.date, capacity: Number(c.value) })
-          .onConflictDoUpdate({ target: [schema.dailyStock.productId, schema.dailyStock.date], set: { capacity: Number(c.value) } });
-    }
-  });
-  invalidateCatalog();
-  revalidatePath("/admin/estoc");
-  return { ok: true, message: "Estoc desat." };
 }

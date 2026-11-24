@@ -4,11 +4,9 @@
  * Després tot s'edita des de l'admin (els fitxers ja no es tornen a llegir).
  */
 import { SAMPLE_PRODUCTS } from "@/data/sample-data";
-import { SEED_ZONES, SEED_DEFAULT_DAILY_STOCK } from "@/config/delivery";
+import { SEED_ZONES } from "@/config/delivery";
 import type { Db } from "./index";
-import { deliveryZones, products, settings } from "./schema";
-
-export const SETTING_DEFAULT_STOCK = "default_daily_stock";
+import { deliveryZones, products } from "./schema";
 
 export async function seed(db: Pick<Db, "insert">): Promise<void> {
   await db
@@ -45,8 +43,4 @@ export async function seed(db: Pick<Db, "insert">): Promise<void> {
     .values(SEED_ZONES.map((z, i) => ({ ...z, sortOrder: i * 10 })))
     .onConflictDoNothing();
 
-  await db
-    .insert(settings)
-    .values({ key: SETTING_DEFAULT_STOCK, value: String(SEED_DEFAULT_DAILY_STOCK) })
-    .onConflictDoNothing();
 }

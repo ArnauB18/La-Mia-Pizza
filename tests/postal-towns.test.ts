@@ -16,13 +16,13 @@ describe("població a partir del codi postal", () => {
   });
 
   it("torna les poblacions amb les opcions d'entrega", async () => {
-    const one = await getDeliveryOptions("08530", []);
+    const one = await getDeliveryOptions("08530");
     expect(one.ok && one.towns).toEqual(["La Garriga"]);
     const several = Object.entries(POSTAL_CODE_TOWNS).find(([, v]) => v.length > 1)!;
-    const many = await getDeliveryOptions(several[0], []);
+    const many = await getDeliveryOptions(several[0]);
     expect(many.ok && many.towns.length).toBeGreaterThan(1);
     // Codi general sense carrers a l'INE: la zona s'accepta igualment i el client escriu la població
-    const unknown = await getDeliveryOptions("08400", []);
+    const unknown = await getDeliveryOptions("08400");
     expect(unknown.ok && unknown.towns).toEqual([]);
   });
 });
