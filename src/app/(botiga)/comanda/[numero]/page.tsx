@@ -5,7 +5,7 @@ import { getDbMode } from "@/db";
 import { formatPhone, formatPrice } from "@/lib/format";
 import { formatLongDate } from "@/lib/dates";
 import { SectionTitle } from "@/components/SectionTitle";
-import { PrintButton } from "./PrintButton";
+import { PrintButton } from "@/components/PrintButton";
 import { t } from "@/messages";
 
 type Props = { params: Promise<{ numero: string }>; searchParams: Promise<{ t?: string }> };

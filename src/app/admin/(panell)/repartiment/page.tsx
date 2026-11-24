@@ -5,7 +5,7 @@ import { isAdmin } from "@/lib/admin-auth";
 import { listOrders, zoneName } from "@/lib/orders";
 import { formatLongDate, isIsoDate } from "@/lib/dates";
 import { formatPhone, formatPrice } from "@/lib/format";
-import { PrintButton } from "@/app/comanda/[numero]/PrintButton";
+import { PrintButton } from "@/components/PrintButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin · Full de repartiment", robots: { index: false, follow: false } };

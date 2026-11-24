@@ -36,12 +36,6 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(x, y);
 }
 
-/** Avís a l'admin si la contrasenya és massa curta (o la de proves en local). */
-export function isWeakPassword(): boolean {
-  const pw = adminPassword();
-  return pw !== null && pw.length < 14;
-}
-
 export function checkPassword(candidate: string): boolean {
   const pw = adminPassword();
   return pw !== null && safeEqual(candidate.trim(), pw);

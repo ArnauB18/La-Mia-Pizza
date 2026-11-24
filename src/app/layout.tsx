@@ -1,11 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource/caveat-brush";
 import "./globals.css";
-import { CartProvider } from "@/lib/cart";
-import { Header } from "@/components/Header";
-import { AddedToast } from "@/components/AddedToast";
-import { Footer } from "@/components/Footer";
-import { getProducts } from "@/lib/catalog";
 import { BUSINESS } from "@/config/business";
 import { DEFAULT_LOCALE, t } from "@/messages";
 
@@ -23,29 +18,15 @@ export const viewport: Viewport = {
   themeColor: "#f4e3c7",
 };
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  // Catàleg actiu per a la cistella (preus actuals; surt de la memòria cau, no de la BD a cada visita)
-  const products = await getProducts();
+/**
+ * Marc comú mínim. Cada part de la web té el seu:
+ *   - botiga: src/app/(botiga)/layout.tsx (capçalera, cistella, peu)
+ *   - administració: src/app/admin/layout.tsx (barra compacta)
+ */
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang={DEFAULT_LOCALE}>
-      <body className="min-h-dvh font-sans antialiased">
-        <CartProvider products={products}>
-          {/* Enllaç per saltar directament al contingut (accessibilitat amb teclat) */}
-          <a
-            href="#contingut"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
-          >
-            Salta al contingut
-          </a>
-          <div className="bg-ink px-4 py-1.5 text-center text-xs text-white print:hidden">{t.common.prototypeBanner}</div>
-          <Header />
-          <main id="contingut" className="mx-auto max-w-3xl px-4 pb-16 pt-6 lg:max-w-5xl print:max-w-none print:p-0">
-            {children}
-          </main>
-          <Footer />
-          <AddedToast />
-        </CartProvider>
-      </body>
+      <body className="min-h-dvh font-sans antialiased">{children}</body>
     </html>
   );
 }
