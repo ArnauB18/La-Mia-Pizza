@@ -1,8 +1,13 @@
 "use client";
 
 /**
- * Pujada de la foto d'un producte.
- * Al mòbil obre la càmera o la galeria. Abans d'enviar-la, el navegador la redueix
+ * Pujada de la foto d'un producte, triada de la galeria del mòbil.
+ *
+ * `accept` amb formats concrets (no "image/*") i sense `capture`:
+ *   - Android obre directament el selector de fotos (galeria), no la càmera.
+ *   - iPhone mostra el menú del sistema amb «Fototeca» com a primera opció (cap web
+ *     el pot saltar) i converteix sol les fotos HEIC a JPG.
+ * Abans d'enviar-la, el navegador la redueix
  * (màx. 1600 px, JPEG): una foto de mòbil de 5 MB passa a uns 300 KB i puja ràpid.
  */
 import Image from "next/image";
@@ -67,7 +72,7 @@ export function ImageUploader({ value, onChange, name }: { value: string; onChan
         <input
           ref={input}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           className="sr-only"
           id="photo"
           onChange={(e) => handle(e.target.files?.[0])}
@@ -78,14 +83,16 @@ export function ImageUploader({ value, onChange, name }: { value: string; onChan
             busy ? "pointer-events-none opacity-60" : ""
           }`}
         >
-          📷 {value ? "Canviar la foto" : "Pujar una foto"}
+          🖼️ {value ? "Canviar la foto" : "Triar una foto de la galeria"}
         </label>
         {value && (
           <button type="button" onClick={() => onChange("")} className="ml-2 text-sm text-ink-soft underline underline-offset-2 hover:text-ink">
             Treure la foto
           </button>
         )}
-        <p className="text-xs text-ink-soft">JPG, PNG o WebP. Millor quadrada i feta des de dalt. Es redueix sola.</p>
+        <p className="text-xs text-ink-soft">
+          A l&apos;iPhone, tria «Fototeca». Millor una foto quadrada i feta des de dalt. Es redueix sola.
+        </p>
         {error && (
           <p role="alert" className="text-sm font-medium text-red-700">
             {error}
