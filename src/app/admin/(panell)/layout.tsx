@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
+      <div className="mb-6 flex flex-wrap items-center justify-end gap-3 sm:justify-between print:hidden">
         <AdminNav />
         <form action={logout}>
           <button className="rounded-full border border-ink/60 px-4 py-2 text-sm transition hover:bg-ink hover:text-paper">
