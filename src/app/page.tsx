@@ -1,12 +1,16 @@
 import Image from "next/image";
-import { getProductsByCategory } from "@/lib/products";
+import { getProductsByCategory } from "@/lib/catalog";
 import { CATEGORIES } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionTitle } from "@/components/SectionTitle";
 import { BUSINESS } from "@/config/business";
 import { t } from "@/messages";
 
-export default function HomePage() {
+// Pàgina estàtica: es regenera quan l'admin desa canvis (i, per si de cas, cada hora)
+export const revalidate = 3600;
+
+export default async function HomePage() {
+  const sections = await Promise.all(CATEGORIES.map(async (category) => ({ category, products: await getProductsByCategory(category) })));
   return (
     <>
       {/* Capçalera a l'estil de la referència: logo + nom manuscrit sobre beix */}
@@ -27,8 +31,7 @@ export default function HomePage() {
       </section>
 
       {/* Una secció per categoria: pizzes fetes i bases */}
-      {CATEGORIES.map((category, sectionIndex) => {
-        const products = getProductsByCategory(category);
+      {sections.map(({ category, products }, sectionIndex) => {
         if (products.length === 0) return null;
         const section = t.home.sections[category];
         return (

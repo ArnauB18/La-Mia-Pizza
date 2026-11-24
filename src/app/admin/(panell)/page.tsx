@@ -2,14 +2,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/admin-auth";
-import { listDeliveryDatesWithOrders, listOrders, zoneName, type OrderWithItems } from "@/lib/orders";
-import { getDbMode } from "@/db";
+import { listDeliveryDatesWithOrders, listOrders, zoneNames, type OrderWithItems } from "@/lib/orders";
+import { getZones } from "@/lib/catalog";
 import { ORDER_STATUSES, type OrderStatus } from "@/db/schema";
-import { DELIVERY_ZONES } from "@/config/delivery";
 import { formatPhone, formatPrice } from "@/lib/format";
 import { formatLongDate, isIsoDate, madridNow } from "@/lib/dates";
 import { SectionTitle } from "@/components/SectionTitle";
-import { changeStatus, logout } from "./actions";
+import { changeStatus } from "../actions";
 import { t } from "@/messages";
 
 export const dynamic = "force-dynamic";
@@ -31,14 +30,15 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const sp = await searchParams;
   const date = sp.date && isIsoDate(sp.date) ? sp.date : "";
-  const zone = DELIVERY_ZONES.some((z) => z.id === sp.zone) ? sp.zone! : "";
+  const zones = await getZones();
+  const names = await zoneNames();
+  const zone = zones.some((z) => z.id === sp.zone) ? sp.zone! : "";
   const status = sp.status === "all" ? undefined : ORDER_STATUSES.includes(sp.status as OrderStatus) ? (sp.status as OrderStatus) : "active";
   const today = madridNow().date;
 
-  const [orders, dates, dbMode] = await Promise.all([
+  const [orders, dates] = await Promise.all([
     listOrders({ date: date || undefined, fromDate: date ? undefined : today, zoneId: zone || undefined, status }),
     listDeliveryDatesWithOrders(),
-    getDbMode(),
   ]);
 
   // Llista de producció per a l'obrador: unitats de cada producte (comandes no cancel·lades)
@@ -60,18 +60,9 @@ export default async function AdminPage({ searchParams }: Props) {
               🛵 Full de repartiment
             </Link>
           )}
-          <form action={logout}>
-            <button className="rounded-full border border-ink/60 px-4 py-2 transition hover:bg-ink hover:text-paper">Sortir</button>
-          </form>
         </div>
       </div>
 
-      {dbMode === "pglite-memory" && (
-        <p className="mt-4 rounded-lg border border-dashed border-amber-400 bg-amber-50 p-3 text-xs text-amber-900">
-          ⚠️ Base de dades temporal (en memòria): les comandes es perden quan Vercel reinicia el servidor. Connecta Neon
-          perquè es guardin (vegeu el README).
-        </p>
-      )}
 
       {/* Filtres: formulari GET, funciona sense JavaScript */}
       <form className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border border-line bg-card p-3 sm:grid-cols-4">
@@ -85,7 +76,7 @@ export default async function AdminPage({ searchParams }: Props) {
         </Select>
         <Select name="zone" label="Província" defaultValue={zone}>
           <option value="">Totes</option>
-          {DELIVERY_ZONES.map((z) => (
+          {zones.map((z) => (
             <option key={z.id} value={z.id}>
               {z.name}
             </option>
@@ -138,7 +129,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </h2>
           <div className="space-y-3">
             {list.map((o) => (
-              <OrderCard key={o.id} order={o} />
+              <OrderCard key={o.id} order={o} zoneName={names[o.zoneId] ?? o.zoneId} />
             ))}
           </div>
         </section>
@@ -147,7 +138,7 @@ export default async function AdminPage({ searchParams }: Props) {
   );
 }
 
-function OrderCard({ order: o }: { order: OrderWithItems }) {
+function OrderCard({ order: o, zoneName }: { order: OrderWithItems; zoneName: string }) {
   return (
     <article className="rounded-2xl border border-line bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -160,8 +151,8 @@ function OrderCard({ order: o }: { order: OrderWithItems }) {
       <div className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
         <p>
           📍 {o.town}{" "}
-          {o.town.toLowerCase() !== zoneName(o.zoneId).toLowerCase() && (
-            <span className="text-ink-soft">({zoneName(o.zoneId)})</span>
+          {o.town.toLowerCase() !== zoneName.toLowerCase() && (
+            <span className="text-ink-soft">({zoneName})</span>
           )}
         </p>
         <p>

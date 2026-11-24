@@ -9,7 +9,6 @@
  * crear la comanda (el client no pot "triar" el preu).
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { getProductById } from "./products";
 import type { Product } from "./types";
 
 const STORAGE_KEY = "lmp-cart-v1";
@@ -47,7 +46,7 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function readStorage(): CartLines {
+function readStorage(getProductById: (id: string) => Product | undefined): CartLines {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -66,14 +65,22 @@ function readStorage(): CartLines {
   }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+/**
+ * `products`: el catàleg actiu, que ve del servidor (layout). Així la cistella
+ * sempre mostra els preus actuals i ignora productes que s'hagin desactivat.
+ */
+export function CartProvider({ children, products }: { children: React.ReactNode; products: Product[] }) {
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const getProductById = useCallback((id: string) => byId.get(id), [byId]);
   const [items, setItems] = useState<CartLines>({});
   const [ready, setReady] = useState(false);
   const [lastAdded, setLastAdded] = useState<LastAdded | null>(null);
 
   useEffect(() => {
-    setItems(readStorage());
+    setItems(readStorage(getProductById));
     setReady(true);
+    // Només en carregar: llegim la cistella desada una vegada
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -102,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }));
     const product = getProductById(productId);
     if (product) setLastAdded({ product, at: Date.now() });
-  }, []);
+  }, [getProductById]);
 
   const dismissLastAdded = useCallback(() => setLastAdded(null), []);
 
@@ -128,7 +135,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       remove,
       clear,
     };
-  }, [items, ready, lastAdded, dismissLastAdded, add, setQuantity, remove, clear]);
+  }, [items, ready, lastAdded, dismissLastAdded, add, setQuantity, remove, clear, getProductById]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

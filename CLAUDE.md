@@ -87,12 +87,16 @@ Una web on el client pugui **comprar pizzes envasades al buit i rebre-les a casa
 
 - **Fase 1 (feta):** catàleg, fitxa de producte i cistella (localStorage).
 - **Fase 2 (feta):** zones per codi postal, dies d'entrega sense franja horària (hora límit en hora de Catalunya), dades del client i adreça, pagament simulat, confirmació amb enllaç privat, pàgines legals (esborranys).
-- **Fase 3 (part feta):** admin amb contrasenya (comandes per dia/zona/estat, llista de producció, canvi d'estat, full de repartiment). Estoc per producte i dia amb capacitat per defecte i taula `daily_stock`.
-- **Pendent:** edició d'estoc, zones i productes des de l'admin; correu de confirmació; Stripe en mode test; castellà.
+- **Fase 3 (feta):** admin amb contrasenya i pestanyes: Comandes (filtres, llista de producció, canvi d'estat, full de repartiment imprimible), Productes (crear/editar/desactivar, pujada de fotos), Estoc (graella producte × dia), Zones (cost, mínim, dies, hora límit).
+- **Pendent:** correu de confirmació; Stripe en mode test; còpia de seguretat diària; castellà.
+
+**Dades:** productes, zones i configuració viuen a la base de dades (s'editen a l'admin). `src/data/sample-data.ts` i `src/config/delivery.ts` només són les dades inicials que es carreguen el primer cop. L'esquema té versió (`SCHEMA_VERSION` a `src/db/bootstrap.ts`): les bases de dades existents s'actualitzen soles en arrencar. Les fotos es guarden a la taula `images` (WebP reduït) i se serveixen a `/api/imatges/[id]`.
 
 Fitxers clau:
-- `src/data/sample-data.ts`: ⚠️ dades de mostra dels productes. Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
-- `src/config/delivery.ts`: ⚠️ zones (4 províncies de Catalunya per prefix de codi postal), enviament, mínim, dies, hora límit i estoc per defecte (valors PENDENTS)
+- `src/data/sample-data.ts`: ⚠️ productes inicials de mostra (només per a la primera càrrega). Dues categories: `pizza` (feta) i `base` (massa estirada sola o amb tomàquet)
+- `src/config/delivery.ts`: ⚠️ zones inicials (4 províncies de Catalunya per prefix de codi postal) i tipus `DeliveryZone` (valors PENDENTS; s'editen a l'admin)
+- `src/lib/catalog.ts`: lectura de productes, zones i configuració des de la BD, amb memòria cau que l'admin invalida en desar
+- `src/app/admin/catalog-actions.ts`: accions de l'admin (productes, fotos, zones, estoc) amb validació
 - `src/config/business.ts`: decisions obertes (`PENDENT`): facturació, IVA, repartiment
 - `src/messages/ca.ts`: tots els textos de client (afegir `es.ts` per al castellà)
 - `src/lib/orders.ts`: lògica de comandes al servidor (validació, estoc, transacció, pagament)

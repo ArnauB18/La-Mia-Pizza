@@ -5,6 +5,7 @@ import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
 import { AddedToast } from "@/components/AddedToast";
 import { Footer } from "@/components/Footer";
+import { getProducts } from "@/lib/catalog";
 import { BUSINESS } from "@/config/business";
 import { DEFAULT_LOCALE, t } from "@/messages";
 
@@ -22,11 +23,13 @@ export const viewport: Viewport = {
   themeColor: "#f4e3c7",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Catàleg actiu per a la cistella (preus actuals; surt de la memòria cau, no de la BD a cada visita)
+  const products = await getProducts();
   return (
     <html lang={DEFAULT_LOCALE}>
       <body className="min-h-dvh font-sans antialiased">
-        <CartProvider>
+        <CartProvider products={products}>
           {/* Enllaç per saltar directament al contingut (accessibilitat amb teclat) */}
           <a
             href="#contingut"

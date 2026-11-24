@@ -4,8 +4,9 @@
  * Noms, preus, pesos, ingredients, al·lèrgens, vida útil i instruccions
  * són INVENTATS per al prototip. Cap d'aquestes dades prové de l'obrador.
  *
- * Aquest és l'ÚNIC fitxer on cal tocar-les durant la fase 1.
- * (A la fase 3 es podran editar des de l'admin.)
+ * Només es fan servir per omplir la base de dades el PRIMER cop que arrenca.
+ * Després els productes s'editen des de l'admin (/admin/productes): canviar
+ * aquest fitxer ja no modifica la botiga.
  *
  * Preu de referència per a proves: ~8 € per pizza, IVA inclòs. Bases: preu inventat.
  */

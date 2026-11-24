@@ -1,5 +1,9 @@
 /**
- * ⚠️  CONFIGURACIÓ D'ENTREGA: VALORS DE MOSTRA, PENDENTS D'ACORDAR AMB EN LUTTY  ⚠️
+ * ZONES D'ENTREGA: tipus i VALORS INICIALS.
+ *
+ * Aquests valors només es fan servir per omplir la base de dades el primer cop.
+ * Després es modifiquen des de l'admin (/admin/zones). Valors de mostra, PENDENTS
+ * d'acordar amb en Lutty.
  *
  * L'entrega és a DOMICILI, a l'adreça que posa el client (no hi ha recollida).
  * Àmbit: tota Catalunya. Una zona per província, reconeguda pel prefix del codi
@@ -32,7 +36,7 @@ export interface DeliveryZone {
   leadDays: number;
 }
 
-/** Valors comuns de mostra (PENDENT). Cada zona els pot sobreescriure. */
+/** Valors comuns de mostra (PENDENT). */
 const DEFAULTS = {
   active: true,
   deliveryFeeCents: 350,
@@ -43,28 +47,23 @@ const DEFAULTS = {
   leadDays: 2,
 } satisfies Partial<DeliveryZone>;
 
-export const DELIVERY_ZONES: DeliveryZone[] = [
+/** Zones inicials (es copien a la BD el primer cop; després s'editen a l'admin). */
+export const SEED_ZONES: DeliveryZone[] = [
   { id: "barcelona", name: "Barcelona", postalCodePrefixes: ["08"], ...DEFAULTS },
   { id: "girona", name: "Girona", postalCodePrefixes: ["17"], ...DEFAULTS },
   { id: "lleida", name: "Lleida", postalCodePrefixes: ["25"], ...DEFAULTS },
   { id: "tarragona", name: "Tarragona", postalCodePrefixes: ["43"], ...DEFAULTS },
 ];
 
+/** Capacitat inicial de l'obrador: unitats de cada producte per dia (PENDENT; editable a l'admin). */
+export const SEED_DEFAULT_DAILY_STOCK = 30;
+
 /** Quants dies d'entrega com a màxim s'ofereixen al client. */
 export const MAX_DELIVERY_OPTIONS = 6;
 
-/**
- * Capacitat de l'obrador per defecte: unitats de cada producte per dia d'entrega.
- * PENDENT: capacitat real de l'obrador. Es podrà ajustar per dia (taula `daily_stock`).
- */
-export const DEFAULT_DAILY_STOCK_PER_PRODUCT = 30;
-
-export function findZoneByPostalCode(postalCode: string): DeliveryZone | undefined {
+/** Zona activa que correspon a un codi postal (funció pura: rep la llista de zones). */
+export function matchZone(zones: DeliveryZone[], postalCode: string): DeliveryZone | undefined {
   const pc = postalCode.trim();
   if (!/^\d{5}$/.test(pc)) return undefined;
-  return DELIVERY_ZONES.find((z) => z.active && z.postalCodePrefixes.some((prefix) => pc.startsWith(prefix)));
-}
-
-export function getZone(id: string): DeliveryZone | undefined {
-  return DELIVERY_ZONES.find((z) => z.id === id);
+  return zones.find((z) => z.active && z.postalCodePrefixes.some((prefix) => pc.startsWith(prefix)));
 }

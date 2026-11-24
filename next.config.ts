@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // PGlite (Postgres en WebAssembly) no s'ha d'empaquetar: es carrega tal qual des de node_modules
   serverExternalPackages: ["@electric-sql/pglite"],
+  experimental: {
+    // Pujada de fotos des de l'admin. El navegador ja les redueix (< 1 MB); límit per si de cas.
+    // (Vercel no accepta peticions de més de 4,5 MB.)
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   images: {
     // Només WebP: l'AVIF pesa una mica menys però és molt lent de generar el primer cop
     formats: ["image/webp"],

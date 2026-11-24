@@ -37,7 +37,7 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
       </div>
       <h1 className="font-display text-4xl first-letter:uppercase">Repartiment · {formatLongDate(date)}</h1>
       <p className="mb-5 text-sm text-ink-soft">
-        {orders.length} entregues · {units} unitats{zone ? ` · ${zoneName(zone)}` : ""}
+        {orders.length} entregues · {units} unitats{zone ? ` · ${await zoneName(zone)}` : ""}
       </p>
 
       {load.size > 0 && (

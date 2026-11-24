@@ -9,10 +9,10 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { getDb, schema, type Db } from "@/db";
 import type { Order, OrderItem, OrderStatus } from "@/db/schema";
-import { DEFAULT_DAILY_STOCK_PER_PRODUCT, findZoneByPostalCode, getZone, type DeliveryZone } from "@/config/delivery";
+import type { DeliveryZone } from "@/config/delivery";
+import { findZoneByPostalCode, getDefaultDailyStock, getProductById, getProducts, getZone, getZones } from "./catalog";
 import { canOrderFor, upcomingDeliveryDates } from "./dates";
 import { computeTotals } from "./pricing";
-import { getProductById } from "./products";
 import { POSTAL_CODE_TOWNS } from "@/data/postal-codes-cat";
 import { checkoutSchema, fieldErrors } from "./validation";
 import { chargeOrder, isValidCardNumber, PAYMENT_PROVIDER } from "./payments";
@@ -29,12 +29,12 @@ type Executor = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 async function remainingStock(
   dates: string[],
   productIds: string[],
-  executor?: Executor,
+  opts: { executor?: Executor; defaultStock?: number } = {},
 ): Promise<Map<string, number>> {
   const remaining = new Map<string, number>();
   if (dates.length === 0 || productIds.length === 0) return remaining;
   // Dins d'una transacció cal fer servir la mateixa connexió (si no, es bloquejaria)
-  const db = executor ?? (await getDb());
+  const db = opts.executor ?? (await getDb());
 
   const [capacities, sold] = await Promise.all([
     db
@@ -60,7 +60,9 @@ async function remainingStock(
   ]);
 
   const key = (p: string, d: string) => `${p}|${d}`;
-  for (const d of dates) for (const p of productIds) remaining.set(key(p, d), DEFAULT_DAILY_STOCK_PER_PRODUCT);
+  // Dins d'una transacció la capacitat per defecte ha d'arribar llegida d'abans (una sola connexió)
+  const defaultStock = opts.defaultStock ?? (await getDefaultDailyStock());
+  for (const d of dates) for (const p of productIds) remaining.set(key(p, d), defaultStock);
   for (const c of capacities) remaining.set(key(c.productId, c.date), c.capacity);
   for (const s of sold)
     remaining.set(key(s.productId, s.date), (remaining.get(key(s.productId, s.date)) ?? 0) - Number(s.units));
@@ -89,17 +91,18 @@ export type DeliveryOptionsResult =
 
 export async function getDeliveryOptions(postalCode: string, items: CartItem[]): Promise<DeliveryOptionsResult> {
   if (!/^\d{5}$/.test(postalCode.trim())) return { ok: false, reason: "invalid" };
-  const zone = findZoneByPostalCode(postalCode);
+  const zone = await findZoneByPostalCode(postalCode);
   if (!zone) return { ok: false, reason: "out_of_area" };
 
   const dates = upcomingDeliveryDates(zone);
-  const wanted = items.filter((i) => getProductById(i.productId));
+  const catalog = new Map((await getProducts()).map((p) => [p.id, p]));
+  const wanted = items.filter((i) => catalog.has(i.productId));
   const remaining = await remainingStock(dates, [...new Set(wanted.map((i) => i.productId))]);
 
   const options = dates.map((date) => {
     const soldOut = wanted
       .filter((i) => (remaining.get(`${i.productId}|${date}`) ?? 0) < i.quantity)
-      .map((i) => getProductById(i.productId)!.name);
+      .map((i) => catalog.get(i.productId)!.name);
     return { date, available: soldOut.length === 0, soldOut };
   });
 
@@ -136,7 +139,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const data = parsed.data;
 
   // 2. Regles de negoci
-  const zone = findZoneByPostalCode(data.postalCode);
+  const zone = await findZoneByPostalCode(data.postalCode);
   if (!zone)
     return {
       ok: false,
@@ -156,7 +159,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   for (const i of data.items) merged.set(i.productId, (merged.get(i.productId) ?? 0) + i.quantity);
   const lines: { productId: string; productName: string; unitPriceCents: number; quantity: number }[] = [];
   for (const [productId, quantity] of merged) {
-    const product = getProductById(productId);
+    const product = await getProductById(productId);
     if (!product)
       return { ok: false, message: "Algun producte de la cistella ja no està disponible. Revisa la cistella." };
     lines.push({ productId, productName: product.name, unitPriceCents: product.priceCents, quantity });
@@ -176,6 +179,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   // 3. Reserva d'estoc + creació de la comanda en una transacció.
   //    El bloqueig per data evita que dues comandes simultànies venguin la mateixa última unitat.
   const db = await getDb();
+  const defaultStock = await getDefaultDailyStock();
   let created: { id: number; number: string; token: string } | null = null;
   try {
     for (let attempt = 0; attempt < 3 && !created; attempt++) {
@@ -187,7 +191,7 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
           const remaining = await remainingStock(
             [data.deliveryDate],
             lines.map((l) => l.productId),
-            tx,
+            { executor: tx, defaultStock },
           );
           const short = lines.filter((l) => (remaining.get(`${l.productId}|${data.deliveryDate}`) ?? 0) < l.quantity);
           if (short.length > 0) {
@@ -322,6 +326,48 @@ export async function updateOrderStatus(id: number, status: OrderStatus): Promis
 }
 
 /** Nom de la zona (província). Les comandes antigues del prototip poden tenir ids de zones que ja no existeixen. */
-export function zoneName(zoneId: string): string {
-  return getZone(zoneId)?.name ?? zoneId;
+export async function zoneNames(): Promise<Record<string, string>> {
+  return Object.fromEntries((await getZones()).map((z) => [z.id, z.name]));
+}
+
+export async function zoneName(zoneId: string): Promise<string> {
+  return (await getZone(zoneId))?.name ?? zoneId;
+}
+
+// ───────────────────────── Estoc (admin) ─────────────────────────
+
+export interface StockCell {
+  /** Capacitat concreta per a aquell dia, o null si s'aplica la de per defecte. */
+  capacity: number | null;
+  sold: number;
+}
+
+/** Graella d'estoc per a l'admin: capacitat i unitats venudes per producte i dia. */
+export async function getStockGrid(dates: string[], productIds: string[]): Promise<Map<string, StockCell>> {
+  const grid = new Map<string, StockCell>();
+  if (dates.length === 0 || productIds.length === 0) return grid;
+  const db = await getDb();
+  const [capacities, sold] = await Promise.all([
+    db
+      .select()
+      .from(dailyStock)
+      .where(and(inArray(dailyStock.date, dates), inArray(dailyStock.productId, productIds))),
+    db
+      .select({
+        productId: orderItems.productId,
+        date: orders.deliveryDate,
+        units: sql<number>`cast(sum(${orderItems.quantity}) as integer)`,
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .where(and(inArray(orders.deliveryDate, dates), ne(orders.status, "cancelled")))
+      .groupBy(orderItems.productId, orders.deliveryDate),
+  ]);
+  for (const d of dates) for (const p of productIds) grid.set(`${p}|${d}`, { capacity: null, sold: 0 });
+  for (const c of capacities) grid.get(`${c.productId}|${c.date}`)!.capacity = c.capacity;
+  for (const s of sold) {
+    const cell = grid.get(`${s.productId}|${s.date}`);
+    if (cell) cell.sold = Number(s.units);
+  }
+  return grid;
 }

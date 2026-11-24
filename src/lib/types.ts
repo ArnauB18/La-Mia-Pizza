@@ -70,5 +70,7 @@ export interface Product {
   placeholderColor?: string;
   /** Mostrar "toppings" al marcador de posició (false per a les bases). */
   placeholderToppings?: boolean;
+  /** Ordre al catàleg (més petit = primer). */
+  sortOrder?: number;
   active: boolean;
 }

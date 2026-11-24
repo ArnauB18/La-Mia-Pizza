@@ -12,7 +12,10 @@
 | `/cistella` | Client | Cistella (es desa al navegador) |
 | `/comanda` | Client | Codi postal → dia d'entrega → dades i adreça → pagament |
 | `/comanda/LMP-XXXXX?t=…` | Client | Confirmació (enllaç privat amb token) |
-| `/admin` | Personal | Comandes per dia, zona i estat; llista de producció; canvi d'estat |
+| `/admin` | Personal | Comandes per dia, província i estat; llista de producció; canvi d'estat |
+| `/admin/productes` | Personal | Crear, editar i desactivar productes; pujar fotos |
+| `/admin/estoc` | Personal | Capacitat de l'obrador per producte i dia |
+| `/admin/zones` | Personal | Cost d'enviament, mínim, dies de repartiment i hora límit per província |
 | `/admin/repartiment?date=…` | Personal | Full imprimible per al repartidor |
 | `/legal/*` | Tothom | Condicions, enviaments, devolucions, privacitat (esborranys) |
 
@@ -55,10 +58,14 @@ reinicia el servidor (l'admin ho avisa). Sense el pas 3 l'admin queda desactivad
 
 ## On canviar les dades
 
-| Què | Fitxer |
+Productes, preus, al·lèrgens, fotos, estoc i zones es canvien **des de l'admin**. Els fitxers
+`src/data/sample-data.ts` i `src/config/delivery.ts` només són les dades inicials del primer arrencament.
+
+| Què | On |
 |---|---|
-| Productes, preus, al·lèrgens, vida útil | `src/data/sample-data.ts` |
-| Zones (4 províncies de Catalunya), enviament, mínim, dies, hora límit, franges, estoc per defecte | `src/config/delivery.ts` |
+| Productes, preus, al·lèrgens, vida útil, fotos | `/admin/productes` |
+| Capacitat per dia | `/admin/estoc` |
+| Zones: enviament, mínim, dies, hora límit | `/admin/zones` |
 | Decisions obertes (facturació, IVA, repartiment) | `src/config/business.ts` |
 | Textos de la web | `src/messages/ca.ts` |
 | Textos legals (esborranys) | `src/app/legal/[slug]/page.tsx` |

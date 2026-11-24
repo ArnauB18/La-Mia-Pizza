@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProductBySlug, getProducts, getProductsByCategory } from "@/lib/products";
+import { getProductBySlug, getProducts, getProductsByCategory } from "@/lib/catalog";
 import { formatPrice, formatWeight } from "@/lib/format";
 import { PizzaImage } from "@/components/PizzaImage";
 import { StickyAddBar } from "@/components/StickyAddBar";
@@ -14,22 +14,26 @@ import { t } from "@/messages";
 type Props = { params: Promise<{ slug: string }> };
 
 // Fase 1: pàgines estàtiques generades a partir del fitxer de mostra.
-export function generateStaticParams() {
-  return getProducts().map((p) => ({ slug: p.slug }));
+// Fitxes estàtiques; les de productes nous es generen a la primera visita.
+// Es regeneren quan l'admin desa canvis.
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return (await getProducts()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = getProductBySlug((await params).slug);
+  const product = await getProductBySlug((await params).slug);
   return { title: product ? product.name : t.product.notFound };
 }
 
 export default async function ProductPage({ params }: Props) {
-  const product = getProductBySlug((await params).slug);
+  const product = await getProductBySlug((await params).slug);
   if (!product) notFound();
 
   const p = product;
   // Suggeriments: altres productes de la mateixa categoria
-  const related = getProductsByCategory(p.category)
+  const related = (await getProductsByCategory(p.category))
     .filter((x) => x.id !== p.id)
     .slice(0, 2);
 

@@ -13,7 +13,8 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
-import { BOOTSTRAP_STATEMENTS } from "./bootstrap";
+import { BOOTSTRAP_STATEMENTS, SCHEMA_VERSION } from "./bootstrap";
+import { seed } from "./seed";
 
 export type Db = PostgresJsDatabase<typeof schema>;
 
@@ -37,7 +38,10 @@ async function connect(): Promise<{ db: Db; mode: DbMode }> {
   } else {
     const { PGlite } = await import("@electric-sql/pglite");
     const { drizzle } = await import("drizzle-orm/pglite");
-    const onVercel = Boolean(process.env.VERCEL);
+    // En memòria: a Vercel sense Neon, o mentre es compila (els processos de compilació
+    // en paral·lel no poden obrir tots alhora la mateixa carpeta de dades)
+    const building = process.env.NEXT_PHASE === "phase-production-build";
+    const onVercel = Boolean(process.env.VERCEL) || building;
     let client;
     if (onVercel) client = new PGlite();
     else {
@@ -48,16 +52,45 @@ async function connect(): Promise<{ db: Db; mode: DbMode }> {
     // Mateixa API en temps d'execució; només difereixen els tipus genèrics
     db = drizzle(client, { schema }) as unknown as Db;
     mode = onVercel ? "pglite-memory" : "pglite-file";
-    if (onVercel) console.warn("[db] Sense DATABASE_URL: base de dades EN MEMÒRIA. Les comandes es perdran. Connecta Neon.");
+    if (onVercel && !building) console.warn("[db] Sense DATABASE_URL: base de dades EN MEMÒRIA. Les comandes es perdran. Connecta Neon.");
   }
 
-  // Crear les taules només si falten: en el cas habitual és UNA consulta (no sis),
-  // cosa que importa en cada arrencada en fred d'una funció de Vercel.
-  const check = await db.execute<{ ok: boolean }>(sql`select to_regclass('public.daily_stock') is not null
-      and not exists (select 1 from information_schema.columns where table_name = 'orders' and column_name = 'time_slot') as ok`);
-  const rows = (Array.isArray(check) ? check : (check as unknown as { rows: { ok: boolean }[] }).rows) as { ok: boolean }[];
-  if (!rows[0]?.ok) for (const statement of BOOTSTRAP_STATEMENTS) await db.execute(sql.raw(statement));
+  await migrate(db);
   return { db, mode };
+}
+
+/** Files d'un `db.execute` (postgres.js torna un array; PGlite, un objecte amb `rows`). */
+function rowsOf<T>(result: unknown): T[] {
+  return (Array.isArray(result) ? result : (result as { rows: T[] }).rows) as T[];
+}
+
+/**
+ * Posa l'esquema al dia. En el cas habitual és UNA consulta (la versió ja és l'actual),
+ * cosa que importa en cada arrencada en fred d'una funció de Vercel.
+ * Si cal actualitzar, ho fa en una transacció amb bloqueig: si dos servidors
+ * arrenquen alhora, el segon espera i no fa res.
+ */
+async function migrate(db: Db): Promise<void> {
+  const current = async (executor: Pick<Db, "execute">) => {
+    try {
+      const rows = rowsOf<{ v: number }>(await executor.execute(sql`select schema_version as v from app_meta where id = 1`));
+      return Number(rows[0]?.v ?? 0);
+    } catch {
+      return 0; // la taula encara no existeix
+    }
+  };
+  if ((await current(db)) >= SCHEMA_VERSION) return;
+
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(727274)`);
+    for (const statement of BOOTSTRAP_STATEMENTS) await tx.execute(sql.raw(statement));
+    if ((await current(tx)) >= SCHEMA_VERSION) return; // un altre servidor ja ho ha fet
+    await seed(tx);
+    await tx.execute(
+      sql`insert into app_meta (id, schema_version) values (1, ${SCHEMA_VERSION})
+          on conflict (id) do update set schema_version = excluded.schema_version`,
+    );
+  });
 }
 
 export function databaseUrl(): string | undefined {

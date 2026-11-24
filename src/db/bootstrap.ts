@@ -1,5 +1,5 @@
 /**
- * Creació de taules (idempotent: es pot executar tantes vegades com calgui).
+ * Creació i actualització de taules (idempotent: es pot executar tantes vegades com calgui).
  *
  * Decisió: per a un prototip, un SQL "CREATE TABLE IF NOT EXISTS" que s'executa
  * en arrencar és més simple i robust a Vercel que un sistema de migracions.
@@ -48,4 +48,63 @@ export const BOOTSTRAP_STATEMENTS = [
     capacity integer NOT NULL,
     PRIMARY KEY (product_id, date)
   )`,
+  `CREATE TABLE IF NOT EXISTS products (
+    id text PRIMARY KEY,
+    slug text NOT NULL UNIQUE,
+    name text NOT NULL,
+    category text NOT NULL,
+    short_description text NOT NULL DEFAULT '',
+    description text NOT NULL DEFAULT '',
+    price_cents integer NOT NULL,
+    weight_grams integer NOT NULL,
+    ingredients text NOT NULL DEFAULT '',
+    allergens text[] NOT NULL DEFAULT '{}',
+    may_contain text[] NOT NULL DEFAULT '{}',
+    shelf_life_days integer NOT NULL,
+    storage text NOT NULL DEFAULT 'refrigerated',
+    preparation text NOT NULL DEFAULT '',
+    lot text,
+    best_before text,
+    image_url text,
+    placeholder_color text,
+    placeholder_toppings boolean NOT NULL DEFAULT true,
+    sort_order integer NOT NULL DEFAULT 0,
+    active boolean NOT NULL DEFAULT true,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS delivery_zones (
+    id text PRIMARY KEY,
+    name text NOT NULL,
+    postal_code_prefixes text[] NOT NULL,
+    active boolean NOT NULL DEFAULT true,
+    delivery_fee_cents integer NOT NULL,
+    free_shipping_from_cents integer,
+    min_order_cents integer NOT NULL,
+    delivery_weekdays integer[] NOT NULL,
+    cutoff_time text NOT NULL,
+    lead_days integer NOT NULL,
+    sort_order integer NOT NULL DEFAULT 0
+  )`,
+  `CREATE TABLE IF NOT EXISTS settings (
+    key text PRIMARY KEY,
+    value text NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS images (
+    id text PRIMARY KEY,
+    content_type text NOT NULL,
+    data bytea NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS app_meta (
+    id integer PRIMARY KEY,
+    schema_version integer NOT NULL
+  )`,
 ];
+
+/**
+ * Versió actual de l'esquema. Puja-la quan afegeixis taules o columnes: les bases
+ * de dades existents (Neon, local) s'actualitzaran soles en la següent arrencada.
+ *   1: comandes, línies i estoc
+ *   2: productes, zones, configuració i imatges editables des de l'admin
+ */
+export const SCHEMA_VERSION = 2;
