@@ -22,6 +22,9 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
   cancelled: "bg-red-100 text-red-800 line-through",
 };
 
+/** Estats en què l'obrador encara ha de preparar la comanda. */
+const TO_PREPARE: OrderStatus[] = ["paid", "preparing"];
+
 /** El pas següent de cada estat: un sol toc per avançar la comanda. */
 const NEXT_STEP: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
   paid: { to: "preparing", label: "Començar a preparar" },
@@ -51,13 +54,18 @@ export default async function AdminPage({ searchParams }: Props) {
     listDeliveryDatesWithOrders(),
   ]);
 
-  // Llista de producció per a l'obrador: unitats de cada producte (comandes no cancel·lades)
+  // Totals de les comandes que es mostren (sense les cancel·lades)
+  const live = orders.filter((o) => o.status !== "cancelled" && o.status !== "pending");
+  const units = live.reduce((n, o) => n + o.items.reduce((m, i) => m + i.quantity, 0), 0);
+  const revenue = live.reduce((s, o) => s + o.totalCents, 0);
+
+  // «A preparar»: NOMÉS el que l'obrador encara ha de fer (pagades i en preparació).
+  // Les que ja han sortit a repartir o s'han lliurat ja estan fetes.
   const production = new Map<string, number>();
   for (const o of orders)
-    if (o.status !== "cancelled")
+    if (TO_PREPARE.includes(o.status))
       for (const i of o.items) production.set(i.productName, (production.get(i.productName) ?? 0) + i.quantity);
-  const units = [...production.values()].reduce((a, b) => a + b, 0);
-  const revenue = orders.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.totalCents, 0);
+  const toPrepareUnits = [...production.values()].reduce((a, b) => a + b, 0);
   const byDate = Map.groupBy(orders, (o) => o.deliveryDate);
 
   // Etiquetes dels filtres actius, cadascuna amb l'enllaç per treure-la
@@ -167,9 +175,16 @@ export default async function AdminPage({ searchParams }: Props) {
           </Link>
         )}
       </div>
+      {live.length > 0 && production.size === 0 && (
+        <p className="mt-2 rounded-2xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-basil shadow-sm">
+          ✓ Tot preparat
+        </p>
+      )}
       {production.size > 0 && (
         <details className="mt-2 rounded-2xl border border-line bg-card px-4 py-2.5 text-sm shadow-sm">
-          <summary className="cursor-pointer font-semibold">📦 A preparar</summary>
+          <summary className="cursor-pointer font-semibold">
+            📦 A preparar <span className="font-normal text-ink-soft">· {toPrepareUnits} unitats</span>
+          </summary>
           <ul className="mt-2 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
             {[...production]
               .sort((a, b) => b[1] - a[1])

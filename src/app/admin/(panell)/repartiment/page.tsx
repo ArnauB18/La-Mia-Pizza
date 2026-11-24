@@ -25,7 +25,11 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
   const units = orders.reduce((s, o) => s + o.items.reduce((n, i) => n + i.quantity, 0), 0);
   // Càrrega del dia: unitats de cada producte que han de sortir de l'obrador
   const load = new Map<string, number>();
-  for (const o of orders) for (const i of o.items) load.set(i.productName, (load.get(i.productName) ?? 0) + i.quantity);
+  // Només el que encara s'ha d'entregar (les lliurades ja no es carreguen)
+  for (const o of orders)
+    if (o.status !== "delivered")
+      for (const i of o.items) load.set(i.productName, (load.get(i.productName) ?? 0) + i.quantity);
+  const pending = orders.filter((o) => o.status !== "delivered").length;
 
   return (
     <div>
@@ -37,7 +41,8 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
       </div>
       <h1 className="font-display text-4xl first-letter:uppercase">Repartiment · {formatLongDate(date)}</h1>
       <p className="mb-5 text-sm text-ink-soft">
-        {orders.length} entregues · {units} unitats{zone ? ` · ${await zoneName(zone)}` : ""}
+        {orders.length} entregues · {units} unitats{pending < orders.length ? ` · ${orders.length - pending} ja lliurad${orders.length - pending === 1 ? "a" : "es"}` : ""}
+        {zone ? ` · ${await zoneName(zone)}` : ""}
       </p>
 
       {load.size > 0 && (
@@ -60,7 +65,13 @@ export default async function DeliverySheetPage({ searchParams }: Props) {
         <ol className="space-y-2">
           {orders.map((o, i) => (
             <li key={o.id} className="flex gap-3 break-inside-avoid rounded-xl border border-line bg-card p-3 text-sm print:rounded-none print:border-x-0 print:border-t-0 print:bg-white">
-              <span className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-ink" aria-hidden="true" />
+              {/* Casella per marcar a mà; si ja està lliurada, surt marcada */}
+              <span
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-ink text-xs font-bold ${o.status === "delivered" ? "bg-ink text-paper" : ""}`}
+                aria-label={o.status === "delivered" ? "Lliurada" : undefined}
+              >
+                {o.status === "delivered" ? "✓" : ""}
+              </span>
               <div className="flex-1">
                 <p className="font-semibold">
                   {i + 1}. {o.town} · <span className="font-mono">{o.number}</span>
