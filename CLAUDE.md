@@ -99,4 +99,5 @@ Fitxers clau:
 - `src/lib/dates.ts`: càlcul de dies d'entrega i hora límit (Europe/Madrid)
 - `src/db/`: esquema Drizzle, SQL de creació (`bootstrap.ts`, mantenir-lo sincronitzat) i connexió (Neon o PGlite)
 - `src/lib/cart.tsx`: cistella; només guarda id + quantitat, mai preus
+- `src/data/postal-codes-cat.ts`: codi postal → població (INE, CC BY 4.0), generat amb `scripts/build-postal-codes.py`. Omple la població al procés de comanda; mai bloqueja
 - `tests/`: proves amb Vitest (`npm test`), incloent-hi el procés de comanda contra Postgres en memòria

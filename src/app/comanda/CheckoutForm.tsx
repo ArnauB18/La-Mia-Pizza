@@ -12,7 +12,7 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 import { computeTotals } from "@/lib/pricing";
@@ -57,6 +57,8 @@ export function CheckoutForm() {
   const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "" });
   const [address, setAddress] = useState<Address>({ line: "", extra: "", town: "", notes: "" });
   const [remember, setRemember] = useState(true);
+  // Última població omplerta automàticament: només la substituïm si el client no l'ha canviada
+  const autoTown = useRef("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [card, setCard] = useState({ number: TEST_CARD, expiry: "12/30", cvc: "123" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -103,8 +105,21 @@ export function CheckoutForm() {
               ? current
               : (res.options.find((o) => o.available)?.date ?? ""),
           );
+          // Població a partir del codi postal: si n'hi ha una, l'omplim; si n'hi ha
+          // diverses, el client tria (botons sota el camp). Mai trepitgem el que ha escrit.
+          setAddress((a) => {
+            if (a.town !== "" && a.town !== autoTown.current) return a;
+            const town = res.towns.length === 1 ? res.towns[0] : res.towns.includes(a.town) ? a.town : "";
+            autoTown.current = town;
+            return { ...a, town };
+          });
           // Els camps que acabem d'omplir automàticament ja no tenen error
-          setErrors((e) => ({ ...e, postalCode: "", deliveryDate: "" }));
+          setErrors((e) => ({
+            ...e,
+            postalCode: "",
+            deliveryDate: "",
+            ...(res.towns.length === 1 ? { "address.town": "" } : {}),
+          }));
         }
       })
       .catch(() => !cancelled && setFormMessage(t.checkout.genericError))
@@ -391,7 +406,16 @@ export function CheckoutForm() {
                   onChange={(e) => setAddress({ ...address, extra: e.target.value })}
                 />
               </Field>
-              <Field label={t.checkout.town} htmlFor="address-town" error={errors["address.town"]}>
+              <Field
+                label={t.checkout.town}
+                htmlFor="address-town"
+                error={errors["address.town"]}
+                help={
+                  delivery?.ok && delivery.towns.length === 1 && address.town === delivery.towns[0]
+                    ? t.checkout.townFromPostalCode
+                    : undefined
+                }
+              >
                 <Input
                   id="address-town"
                   autoComplete="address-level2"
@@ -402,6 +426,32 @@ export function CheckoutForm() {
                     clearError("address.town");
                   }}
                 />
+                {/* Codi postal compartit per diversos pobles: el client tria el seu amb un toc */}
+                {delivery?.ok && delivery.towns.length > 1 && (
+                  <div className="animate-fade-up mt-2">
+                    <p className="mb-1.5 text-xs text-ink-soft">{t.checkout.townPick}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {delivery.towns.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            setAddress({ ...address, town: name });
+                            autoTown.current = name;
+                            clearError("address.town");
+                          }}
+                          className={`rounded-full border px-3 py-1 text-sm transition ${
+                            address.town === name
+                              ? "border-ink bg-ink text-paper"
+                              : "border-line bg-card hover:border-ink/50"
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Field>
               <Field label={t.checkout.notes} htmlFor="address-notes" className="sm:col-span-2">
                 <Textarea

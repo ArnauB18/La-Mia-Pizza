@@ -13,6 +13,7 @@ import { DEFAULT_DAILY_STOCK_PER_PRODUCT, findZoneByPostalCode, getZone, type De
 import { canOrderFor, upcomingDeliveryDates } from "./dates";
 import { computeTotals } from "./pricing";
 import { getProductById } from "./products";
+import { POSTAL_CODE_TOWNS } from "@/data/postal-codes-cat";
 import { checkoutSchema, fieldErrors } from "./validation";
 import { chargeOrder, isValidCardNumber, PAYMENT_PROVIDER } from "./payments";
 
@@ -25,7 +26,11 @@ type Executor = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 // ───────────────────────── Estoc i disponibilitat ─────────────────────────
 
 /** Unitats disponibles per producte i data: capacitat − venut (comandes no cancel·lades). */
-async function remainingStock(dates: string[], productIds: string[], executor?: Executor): Promise<Map<string, number>> {
+async function remainingStock(
+  dates: string[],
+  productIds: string[],
+  executor?: Executor,
+): Promise<Map<string, number>> {
   const remaining = new Map<string, number>();
   if (dates.length === 0 || productIds.length === 0) return remaining;
   // Dins d'una transacció cal fer servir la mateixa connexió (si no, es bloquejaria)
@@ -45,7 +50,11 @@ async function remainingStock(dates: string[], productIds: string[], executor?: 
       .from(orderItems)
       .innerJoin(orders, eq(orders.id, orderItems.orderId))
       .where(
-        and(inArray(orders.deliveryDate, dates), inArray(orderItems.productId, productIds), ne(orders.status, "cancelled")),
+        and(
+          inArray(orders.deliveryDate, dates),
+          inArray(orderItems.productId, productIds),
+          ne(orders.status, "cancelled"),
+        ),
       )
       .groupBy(orderItems.productId, orders.deliveryDate),
   ]);
@@ -53,7 +62,8 @@ async function remainingStock(dates: string[], productIds: string[], executor?: 
   const key = (p: string, d: string) => `${p}|${d}`;
   for (const d of dates) for (const p of productIds) remaining.set(key(p, d), DEFAULT_DAILY_STOCK_PER_PRODUCT);
   for (const c of capacities) remaining.set(key(c.productId, c.date), c.capacity);
-  for (const s of sold) remaining.set(key(s.productId, s.date), (remaining.get(key(s.productId, s.date)) ?? 0) - Number(s.units));
+  for (const s of sold)
+    remaining.set(key(s.productId, s.date), (remaining.get(key(s.productId, s.date)) ?? 0) - Number(s.units));
   return remaining;
 }
 
@@ -65,7 +75,16 @@ export interface DeliveryOption {
 }
 
 export type DeliveryOptionsResult =
-  | { ok: true; zone: Pick<DeliveryZone, "id" | "name" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "cutoffTime" | "leadDays">; options: DeliveryOption[] }
+  | {
+      ok: true;
+      zone: Pick<
+        DeliveryZone,
+        "id" | "name" | "deliveryFeeCents" | "freeShippingFromCents" | "minOrderCents" | "cutoffTime" | "leadDays"
+      >;
+      options: DeliveryOption[];
+      /** Poblacions d'aquest codi postal (INE). Buit si no el tenim: el client l'escriu a mà. */
+      towns: string[];
+    }
   | { ok: false; reason: "invalid" | "out_of_area" };
 
 export async function getDeliveryOptions(postalCode: string, items: CartItem[]): Promise<DeliveryOptionsResult> {
@@ -85,7 +104,12 @@ export async function getDeliveryOptions(postalCode: string, items: CartItem[]):
   });
 
   const { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays } = zone;
-  return { ok: true, zone: { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays }, options };
+  return {
+    ok: true,
+    zone: { id, name, deliveryFeeCents, freeShippingFromCents, minOrderCents, cutoffTime, leadDays },
+    options,
+    towns: POSTAL_CODE_TOWNS[postalCode.trim()] ?? [],
+  };
 }
 
 // ───────────────────────── Crear comanda ─────────────────────────
@@ -113,9 +137,18 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
 
   // 2. Regles de negoci
   const zone = findZoneByPostalCode(data.postalCode);
-  if (!zone) return { ok: false, message: "De moment no fem entregues a aquest codi postal.", fieldErrors: { postalCode: "Fora de la zona d'entrega." } };
+  if (!zone)
+    return {
+      ok: false,
+      message: "De moment no fem entregues a aquest codi postal.",
+      fieldErrors: { postalCode: "Fora de la zona d'entrega." },
+    };
   if (!canOrderFor(zone, data.deliveryDate)) {
-    return { ok: false, message: "Aquest dia d'entrega ja no està disponible. Tria'n un altre.", fieldErrors: { deliveryDate: "Ja no està disponible." } };
+    return {
+      ok: false,
+      message: "Aquest dia d'entrega ja no està disponible. Tria'n un altre.",
+      fieldErrors: { deliveryDate: "Ja no està disponible." },
+    };
   }
 
   // Agrupem línies repetides i preus des del catàleg (mai des del client)
@@ -124,14 +157,20 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const lines: { productId: string; productName: string; unitPriceCents: number; quantity: number }[] = [];
   for (const [productId, quantity] of merged) {
     const product = getProductById(productId);
-    if (!product) return { ok: false, message: "Algun producte de la cistella ja no està disponible. Revisa la cistella." };
+    if (!product)
+      return { ok: false, message: "Algun producte de la cistella ja no està disponible. Revisa la cistella." };
     lines.push({ productId, productName: product.name, unitPriceCents: product.priceCents, quantity });
   }
   const totals = computeTotals(lines, zone);
-  if (totals.missingForMinimumCents > 0) return { ok: false, message: "La comanda no arriba al mínim per a l'enviament." };
+  if (totals.missingForMinimumCents > 0)
+    return { ok: false, message: "La comanda no arriba al mínim per a l'enviament." };
 
   if (!isValidCardNumber(data.payment.cardNumber)) {
-    return { ok: false, message: "Número de targeta no vàlid.", fieldErrors: { "payment.cardNumber": "Número de targeta no vàlid." } };
+    return {
+      ok: false,
+      message: "Número de targeta no vàlid.",
+      fieldErrors: { "payment.cardNumber": "Número de targeta no vàlid." },
+    };
   }
 
   // 3. Reserva d'estoc + creació de la comanda en una transacció.
@@ -145,10 +184,16 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
       try {
         created = await db.transaction(async (tx) => {
           await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"stock:" + data.deliveryDate}))`);
-          const remaining = await remainingStock([data.deliveryDate], lines.map((l) => l.productId), tx);
+          const remaining = await remainingStock(
+            [data.deliveryDate],
+            lines.map((l) => l.productId),
+            tx,
+          );
           const short = lines.filter((l) => (remaining.get(`${l.productId}|${data.deliveryDate}`) ?? 0) < l.quantity);
           if (short.length > 0) {
-            throw new CheckoutError(`No queden prou unitats de ${short.map((s) => s.productName).join(", ")} per a aquest dia.`);
+            throw new CheckoutError(
+              `No queden prou unitats de ${short.map((s) => s.productName).join(", ")} per a aquest dia.`,
+            );
           }
           const [order] = await tx
             .insert(orders)
@@ -193,9 +238,14 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const payment = await chargeOrder({ amountCents: totals.totalCents, cardNumber: data.payment.cardNumber });
   await db
     .update(orders)
-    .set({ status: payment.ok ? "paid" : "cancelled", paymentRef: payment.ok ? payment.ref : null, updatedAt: new Date() })
+    .set({
+      status: payment.ok ? "paid" : "cancelled",
+      paymentRef: payment.ok ? payment.ref : null,
+      updatedAt: new Date(),
+    })
     .where(eq(orders.id, created.id));
-  if (!payment.ok) return { ok: false, message: payment.message, fieldErrors: { "payment.cardNumber": payment.message } };
+  if (!payment.ok)
+    return { ok: false, message: payment.message, fieldErrors: { "payment.cardNumber": payment.message } };
 
   return { ok: true, number: created.number, token: created.token };
 }
@@ -207,7 +257,15 @@ export type OrderWithItems = Order & { items: OrderItem[] };
 async function withItems(rows: Order[]): Promise<OrderWithItems[]> {
   if (rows.length === 0) return [];
   const db = await getDb();
-  const items = await db.select().from(orderItems).where(inArray(orderItems.orderId, rows.map((r) => r.id)));
+  const items = await db
+    .select()
+    .from(orderItems)
+    .where(
+      inArray(
+        orderItems.orderId,
+        rows.map((r) => r.id),
+      ),
+    );
   return rows.map((r) => ({ ...r, items: items.filter((i) => i.orderId === r.id) }));
 }
 

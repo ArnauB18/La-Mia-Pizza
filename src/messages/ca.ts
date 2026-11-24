@@ -131,6 +131,8 @@ export const ca = {
     addressPlaceholder: "Carrer, número",
     addressExtra: "Pis, porta, escala (opcional)",
     town: "Població",
+    townFromPostalCode: "Segons el codi postal. Si no és correcte, canvia-la.",
+    townPick: "Aquest codi postal correspon a diverses poblacions. Quina és la teva?",
     notes: "Indicacions per al repartidor (opcional)",
     notesPlaceholder: "Ex.: el timbre no funciona, truqueu en arribar.",
     remember: "Recorda les meves dades en aquest dispositiu",

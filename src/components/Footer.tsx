@@ -46,7 +46,7 @@ export function Footer() {
           </ul>
         </nav>
       </div>
-      <p className="mx-auto max-w-3xl px-4 pb-8 text-xs lg:max-w-5xl text-ink-soft">{t.footer.rights}</p>
+      <p className="mx-auto max-w-3xl px-4 pb-8 text-xs lg:max-w-5xl text-ink-soft">{t.footer.rights} Codis postals: INE (CC BY 4.0).</p>
     </footer>
   );
 }
