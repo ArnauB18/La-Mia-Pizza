@@ -105,3 +105,10 @@ Fitxers clau:
 - `src/lib/cart.tsx`: cistella; només guarda id + quantitat, mai preus
 - `src/data/postal-codes-cat.ts`: codi postal → població (INE, CC BY 4.0), generat amb `scripts/build-postal-codes.py`. Omple la població al procés de comanda; mai bloqueja
 - `tests/`: proves amb Vitest (`npm test`), incloent-hi el procés de comanda contra Postgres en memòria
+
+**Seguretat (no rebaixar):**
+- SQL: totes les consultes passen per Drizzle amb paràmetres. `sql.raw` només per al SQL fix de `bootstrap.ts`. Mai concatenar text del client en una consulta. Proves d'atac a `tests/security.test.ts`.
+- Admin: contrasenya única (`ADMIN_PASSWORD`, ≥ 14 caràcters recomanat) comparada en temps constant; galeta signada HMAC, httpOnly, Secure, SameSite=Strict.
+- Força bruta (`src/lib/login-guard.ts`, taula `login_attempts`): 5 errors/15 min per IP i 30 errors/15 min globals → bloqueig de 15 min, comprovat abans de mirar la contrasenya. IP desada com a empremta SHA-256.
+- Totes les entrades es validen amb zod al servidor. Capçaleres: HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy.
+- Les comandes de prova (pagament simulat) es mantenen expressament: no limitar-les.

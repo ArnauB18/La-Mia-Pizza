@@ -9,7 +9,7 @@
  * i dura 7 dies. Si es canvia la contrasenya, totes les sessions caduquen.
  */
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 const COOKIE = "lmp_admin";
@@ -26,10 +26,20 @@ function sign(expires: number, password: string): string {
   return createHmac("sha256", password).update(`admin:${expires}`).digest("base64url");
 }
 
+/**
+ * Comparació en temps constant. Es comparen empremtes SHA-256 (sempre 32 bytes):
+ * així ni el temps de resposta revela quants caràcters té la contrasenya.
+ */
 function safeEqual(a: string, b: string): boolean {
-  const x = Buffer.from(a);
-  const y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
+  const x = createHash("sha256").update(a).digest();
+  const y = createHash("sha256").update(b).digest();
+  return timingSafeEqual(x, y);
+}
+
+/** Avís a l'admin si la contrasenya és massa curta (o la de proves en local). */
+export function isWeakPassword(): boolean {
+  const pw = adminPassword();
+  return pw !== null && pw.length < 14;
 }
 
 export function checkPassword(candidate: string): boolean {
@@ -44,7 +54,8 @@ export async function startAdminSession(): Promise<void> {
   (await cookies()).set(COOKIE, `${expires}.${sign(expires, pw)}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    // Strict: el navegador no l'envia mai des d'una altra web (protecció CSRF extra)
+    sameSite: "strict",
     path: "/",
     maxAge: MAX_AGE,
   });

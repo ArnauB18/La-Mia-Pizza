@@ -95,6 +95,12 @@ export const BOOTSTRAP_STATEMENTS = [
     data bytea NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS login_attempts (
+    key text PRIMARY KEY,
+    failures integer NOT NULL DEFAULT 0,
+    window_start timestamptz NOT NULL DEFAULT now(),
+    locked_until timestamptz
+  )`,
   `CREATE TABLE IF NOT EXISTS app_meta (
     id integer PRIMARY KEY,
     schema_version integer NOT NULL
@@ -106,5 +112,6 @@ export const BOOTSTRAP_STATEMENTS = [
  * de dades existents (Neon, local) s'actualitzaran soles en la següent arrencada.
  *   1: comandes, línies i estoc
  *   2: productes, zones, configuració i imatges editables des de l'admin
+ *   3: intents d'entrada a l'admin (protecció contra força bruta)
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;

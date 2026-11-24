@@ -150,6 +150,17 @@ export const images = pgTable("images", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Intents d'entrada fallits a l'admin (protecció contra provar contrasenyes).
+ * `key`: "ip:<empremta SHA-256 de la IP>" o "global". Mai es desa la IP en clar.
+ */
+export const loginAttempts = pgTable("login_attempts", {
+  key: text("key").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+});
+
 /** Versió de l'esquema: permet actualitzar bases de dades existents en arrencar. */
 export const appMeta = pgTable("app_meta", {
   id: integer("id").primaryKey(),
