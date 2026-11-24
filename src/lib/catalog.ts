@@ -116,6 +116,6 @@ export const getDefaultDailyStock = cached(async (): Promise<number> => {
 /** Després d'un canvi a l'admin: buida la memòria cau i regenera les pàgines de la botiga. */
 export function invalidateCatalog(): void {
   if (process.env.VITEST) return;
-  revalidateTag(TAG);
+  revalidateTag(TAG, "max"); // "max": s'invalida tot el que porta l'etiqueta
   revalidatePath("/", "layout");
 }

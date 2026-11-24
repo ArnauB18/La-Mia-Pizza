@@ -3,19 +3,84 @@
 /**
  * Cistella del client.
  *
- * Decisió: a la fase 1 la cistella viu al navegador (localStorage).
- * Només guardem `productId` + quantitat, mai el preu: el preu es torna a
- * llegir sempre del catàleg, i a la fase 2 el servidor el recalcularà en
- * crear la comanda (el client no pot "triar" el preu).
+ * Decisió: la cistella viu al navegador (localStorage). Només guardem
+ * `productId` + quantitat, mai el preu: el preu es llegeix sempre del catàleg
+ * actual, i el servidor el torna a calcular en crear la comanda (el client no
+ * pot "triar" el preu).
+ *
+ * El localStorage es tracta com un magatzem extern (`useSyncExternalStore`):
+ * és el patró que recomana React, evita repintats dobles en carregar i, de
+ * propina, manté la cistella sincronitzada entre pestanyes.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore } from "react";
 import type { Product } from "./types";
-
-const STORAGE_KEY = "lmp-cart-v1";
 import { MAX_QTY_PER_LINE } from "./limits";
+
 export { MAX_QTY_PER_LINE };
 
-type CartLines = Record<string, number>; // productId -> quantitat
+const STORAGE_KEY = "lmp-cart-v1";
+
+type CartLines = Readonly<Record<string, number>>; // productId -> quantitat
+
+// ───────────── Magatzem (localStorage) ─────────────
+
+const EMPTY: CartLines = Object.freeze({});
+let cache: { raw: string | null; value: CartLines } | null = null;
+const listeners = new Set<() => void>();
+
+function parse(raw: string | null): CartLines {
+  if (!raw) return EMPTY;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return EMPTY;
+    const clean: Record<string, number> = {};
+    for (const [id, qty] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof qty === "number" && qty > 0) clean[id] = Math.min(Math.floor(qty), MAX_QTY_PER_LINE);
+    }
+    return clean;
+  } catch {
+    return EMPTY; // dades corruptes: cistella buida
+  }
+}
+
+/** Snapshot estable: només canvia d'objecte si el contingut desat ha canviat. */
+function getSnapshot(): CartLines {
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    /* navegació privada sense localStorage: treballem només en memòria */
+    return cache?.value ?? EMPTY;
+  }
+  if (!cache || cache.raw !== raw) cache = { raw, value: parse(raw) };
+  return cache.value;
+}
+
+function write(next: CartLines) {
+  const raw = JSON.stringify(next);
+  cache = { raw, value: next };
+  try {
+    window.localStorage.setItem(STORAGE_KEY, raw);
+  } catch {
+    /* si no es pot desar, la cistella funciona igualment durant la visita */
+  }
+  listeners.forEach((l) => l());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  // Canvis fets en una altra pestanya
+  const onStorage = (e: StorageEvent) => e.key === STORAGE_KEY && listener();
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+const noopSubscribe = () => () => {};
+
+// ───────────── Context ─────────────
 
 export interface CartLine {
   product: Product;
@@ -31,7 +96,7 @@ export interface LastAdded {
 }
 
 interface CartContextValue {
-  /** false fins que s'ha llegit el localStorage (evita parpelleigs i errors d'hidratació). */
+  /** false al servidor i durant la hidratació: encara no sabem què hi ha desat. */
   ready: boolean;
   lines: CartLine[];
   totalUnits: number;
@@ -46,80 +111,43 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function readStorage(getProductById: (id: string) => Product | undefined): CartLines {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
-    // Netegem: només productes que existeixen i quantitats vàlides.
-    const clean: CartLines = {};
-    for (const [id, qty] of Object.entries(parsed as Record<string, unknown>)) {
-      if (getProductById(id) && typeof qty === "number" && qty > 0) {
-        clean[id] = Math.min(Math.floor(qty), MAX_QTY_PER_LINE);
-      }
-    }
-    return clean;
-  } catch {
-    return {}; // navegació privada o dades corruptes: cistella buida
-  }
-}
-
 /**
  * `products`: el catàleg actiu, que ve del servidor (layout). Així la cistella
  * sempre mostra els preus actuals i ignora productes que s'hagin desactivat.
  */
 export function CartProvider({ children, products }: { children: React.ReactNode; products: Product[] }) {
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-  const getProductById = useCallback((id: string) => byId.get(id), [byId]);
-  const [items, setItems] = useState<CartLines>({});
-  const [ready, setReady] = useState(false);
+  const items = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+  // true només al navegador, un cop hidratat (al servidor és false)
+  const ready = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const [lastAdded, setLastAdded] = useState<LastAdded | null>(null);
 
-  useEffect(() => {
-    setItems(readStorage(getProductById));
-    setReady(true);
-    // Només en carregar: llegim la cistella desada una vegada
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      /* si no es pot guardar, la cistella funciona igualment durant la visita */
-    }
-  }, [items, ready]);
-
   const setQuantity = useCallback((productId: string, qty: number) => {
-    setItems((prev) => {
-      const next = { ...prev };
-      const q = Math.min(Math.max(0, Math.floor(qty)), MAX_QTY_PER_LINE);
-      if (q === 0) delete next[productId];
-      else next[productId] = q;
-      return next;
-    });
+    const next = { ...getSnapshot() };
+    const q = Math.min(Math.max(0, Math.floor(qty)), MAX_QTY_PER_LINE);
+    if (q === 0) delete next[productId];
+    else next[productId] = q;
+    write(next);
   }, []);
 
-  const add = useCallback((productId: string, qty = 1) => {
-    setItems((prev) => ({
-      ...prev,
-      [productId]: Math.min((prev[productId] ?? 0) + qty, MAX_QTY_PER_LINE),
-    }));
-    const product = getProductById(productId);
-    if (product) setLastAdded({ product, at: Date.now() });
-  }, [getProductById]);
+  const add = useCallback(
+    (productId: string, qty = 1) => {
+      const current = getSnapshot();
+      write({ ...current, [productId]: Math.min((current[productId] ?? 0) + qty, MAX_QTY_PER_LINE) });
+      const product = byId.get(productId);
+      if (product) setLastAdded({ product, at: Date.now() });
+    },
+    [byId],
+  );
 
   const dismissLastAdded = useCallback(() => setLastAdded(null), []);
-
   const remove = useCallback((productId: string) => setQuantity(productId, 0), [setQuantity]);
-  const clear = useCallback(() => setItems({}), []);
+  const clear = useCallback(() => write(EMPTY), []);
 
   const value = useMemo<CartContextValue>(() => {
     const lines: CartLine[] = [];
     for (const [id, quantity] of Object.entries(items)) {
-      const product = getProductById(id);
+      const product = byId.get(id); // productes desactivats o desconeguts: s'ignoren
       if (!product) continue;
       lines.push({ product, quantity, lineTotalCents: product.priceCents * quantity });
     }
@@ -135,7 +163,7 @@ export function CartProvider({ children, products }: { children: React.ReactNode
       remove,
       clear,
     };
-  }, [items, ready, lastAdded, dismissLastAdded, add, setQuantity, remove, clear, getProductById]);
+  }, [items, ready, lastAdded, dismissLastAdded, add, setQuantity, remove, clear, byId]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

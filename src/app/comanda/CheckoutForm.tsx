@@ -46,16 +46,49 @@ function formatExpiry(value: string) {
   return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
 }
 
-export function CheckoutForm() {
-  const router = useRouter();
-  const { ready, lines, clear } = useCart();
+/** Llegeix les dades desades d'altres comandes (si el client ho va permetre). */
+function readSaved(): { customer?: Partial<Customer>; address?: Partial<Address>; postalCode?: string } {
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) ?? "null");
+    return saved && typeof saved === "object" ? saved : {};
+  } catch {
+    return {};
+  }
+}
 
-  const [postalCode, setPostalCode] = useState("");
-  const [delivery, setDelivery] = useState<DeliveryOptionsResult | null>(null);
-  const [loadingOptions, setLoadingOptions] = useState(false);
+/**
+ * Estats previs: mentre no sabem què hi ha a la cistella (servidor/hidratació)
+ * o si està buida. El formulari només es munta al navegador, i així pot llegir
+ * les dades desades directament com a valors inicials.
+ */
+export function CheckoutForm() {
+  const { ready, lines } = useCart();
+  const [completed, setCompleted] = useState(false);
+  if (!ready) return <p className="py-12 text-center text-ink-soft">…</p>;
+  if (lines.length === 0 && !completed) {
+    return (
+      <div className="animate-fade-up py-12 text-center">
+        <SectionTitle as="h1">{t.checkout.emptyTitle}</SectionTitle>
+        <Link href="/" className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-white">
+          {t.cart.goToCatalog}
+        </Link>
+      </div>
+    );
+  }
+  return <CheckoutSteps onCompleted={() => setCompleted(true)} />;
+}
+
+function CheckoutSteps({ onCompleted }: { onCompleted: () => void }) {
+  const router = useRouter();
+  const { lines, clear } = useCart();
+  const [saved] = useState(readSaved);
+
+  const [postalCode, setPostalCode] = useState(typeof saved.postalCode === "string" ? saved.postalCode : "");
+  // Última resposta del servidor, amb la clau (codi postal + cistella) per a la qual es va demanar
+  const [fetched, setFetched] = useState<{ key: string; postalCode: string; result: DeliveryOptionsResult } | null>(null);
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "" });
-  const [address, setAddress] = useState<Address>({ line: "", extra: "", town: "", notes: "" });
+  const [customer, setCustomer] = useState<Customer>({ name: "", phone: "", email: "", ...saved.customer });
+  const [address, setAddress] = useState<Address>({ line: "", extra: "", town: "", notes: "", ...saved.address });
   const [remember, setRemember] = useState(true);
   // Última població omplerta automàticament: només la substituïm si el client no l'ha canviada
   const autoTown = useRef("");
@@ -68,36 +101,26 @@ export function CheckoutForm() {
 
   const items = useMemo(() => lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })), [lines]);
   const itemsKey = JSON.stringify(items);
+  const validPostal = /^\d{5}$/.test(postalCode);
+  const requestKey = `${postalCode}|${itemsKey}`;
+  // Es mostra la resposta del codi postal actual (encara que s'estigui refrescant per un canvi de cistella)
+  const delivery = validPostal && fetched?.postalCode === postalCode ? fetched.result : null;
+  const loadingOptions = validPostal && items.length > 0 && fetched?.key !== requestKey;
   const zone = delivery?.ok ? delivery.zone : undefined;
   const totals = computeTotals(
     lines.map((l) => ({ unitPriceCents: l.product.priceCents, quantity: l.quantity })),
     zone,
   );
 
-  // Recuperar les dades desades d'altres comandes (si el client ho va permetre)
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(REMEMBER_KEY) ?? "null");
-      if (saved?.customer) setCustomer((c) => ({ ...c, ...saved.customer }));
-      if (saved?.address) setAddress((a) => ({ ...a, ...saved.address }));
-      if (typeof saved?.postalCode === "string") setPostalCode(saved.postalCode);
-    } catch {
-      /* sense dades desades */
-    }
-  }, []);
-
   // Cada cop que canvia el codi postal (5 xifres) o la cistella, demanem zona i dies
   useEffect(() => {
-    if (!/^\d{5}$/.test(postalCode) || items.length === 0) {
-      setDelivery(postalCode.length === 5 ? { ok: false, reason: "invalid" } : null);
-      return;
-    }
+    if (!/^\d{5}$/.test(postalCode) || items.length === 0) return;
     let cancelled = false;
-    setLoadingOptions(true);
+    const key = `${postalCode}|${itemsKey}`;
     fetchDeliveryOptions(postalCode, items)
       .then((res) => {
         if (cancelled) return;
-        setDelivery(res);
+        setFetched({ key, postalCode, result: res });
         if (res.ok) {
           // Mantenim la tria si encara és vàlida; si no, proposem el primer dia lliure
           setDeliveryDate((current) =>
@@ -122,8 +145,11 @@ export function CheckoutForm() {
           }));
         }
       })
-      .catch(() => !cancelled && setFormMessage(t.checkout.genericError))
-      .finally(() => !cancelled && setLoadingOptions(false));
+      .catch(() => {
+        if (cancelled) return;
+        setFormMessage(t.checkout.genericError);
+        setFetched({ key, postalCode, result: { ok: false, reason: "invalid" } });
+      });
     return () => {
       cancelled = true;
     };
@@ -165,7 +191,7 @@ export function CheckoutForm() {
         if (res.fieldErrors) focusFirstError(res.fieldErrors);
         // L'estoc o els dies poden haver canviat: refresquem les opcions
         if (res.fieldErrors?.deliveryDate || res.message.includes("unitats")) {
-          fetchDeliveryOptions(postalCode, items).then(setDelivery);
+          fetchDeliveryOptions(postalCode, items).then((r) => setFetched({ key: requestKey, postalCode, result: r }));
         }
         return;
       }
@@ -176,6 +202,7 @@ export function CheckoutForm() {
         /* no passa res si no es pot desar */
       }
       setCompleted(true);
+      onCompleted();
       router.replace(`/comanda/${res.number}?t=${encodeURIComponent(res.token)}`);
       clear();
     });
@@ -187,19 +214,6 @@ export function CheckoutForm() {
     const el = document.getElementById(fieldId(first)) ?? document.getElementById(`${fieldId(first)}-group`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     if (el instanceof HTMLInputElement) el.focus({ preventScroll: true });
-  }
-
-  // ───────── Estats especials ─────────
-  if (!ready) return <p className="py-12 text-center text-ink-soft">…</p>;
-  if (lines.length === 0 && !completed) {
-    return (
-      <div className="animate-fade-up py-12 text-center">
-        <SectionTitle as="h1">{t.checkout.emptyTitle}</SectionTitle>
-        <Link href="/" className="mt-6 inline-block rounded-full bg-brand px-6 py-3 font-semibold text-white">
-          {t.cart.goToCatalog}
-        </Link>
-      </div>
-    );
   }
 
   const step1Done = Boolean(zone);

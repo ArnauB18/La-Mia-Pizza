@@ -4,7 +4,7 @@
  * Formulari d'edició de producte. Totes les dades que es veuen a la fitxa de la
  * botiga (preu, al·lèrgens, vida útil...) es poden canviar aquí.
  */
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { saveProduct } from "@/app/admin/catalog-actions";
 import { Field, Input, Spinner, Textarea } from "@/components/ui";
 import { ALLERGENS, type Product } from "@/lib/types";
@@ -19,7 +19,12 @@ export function ProductForm({ product, defaultSortOrder }: { product?: Product; 
   const [allergens, setAllergens] = useState<string[]>(product?.allergens ?? []);
   // Els errors s'amaguen en tornar a editar i reapareixen si el següent intent també falla
   const [showErrors, setShowErrors] = useState(true);
-  useEffect(() => setShowErrors(true), [state]);
+  // Patró de React per "reiniciar quan canvia una dada": es fa durant el render, sense efecte
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    setShowErrors(true);
+  }
   const e = showErrors ? (state?.errors ?? {}) : {};
 
   return (
